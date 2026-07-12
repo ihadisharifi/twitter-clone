@@ -57,7 +57,7 @@ public class AuthController {
         if (user == null) {
             return Response.error(requestId, StatusCode.NOT_FOUND, "Account not found.");
         }
-        if (!store.getPasswordHash(user.getId()).equals(hash(password))) {
+        if (!verify(password, store.getPasswordHash(user.getId()))) {
             return Response.error(requestId, StatusCode.UNAUTHORIZED, "Invalid username or password.");
         }
 
