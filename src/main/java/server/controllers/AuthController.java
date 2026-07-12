@@ -1,5 +1,6 @@
 package server.controllers;
 
+import at.favre.lib.crypto.bcrypt.BCrypt;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -18,6 +19,7 @@ public class AuthController {
 
     private final TempDataStore store = TempDataStore.get();
     private final Gson gson = new Gson();
+    private static final int BCRYPT_COST = 12;
 
     public Response register(String requestId, JsonElement payload) {
         JsonObject body = payload.getAsJsonObject();
@@ -79,15 +81,14 @@ public class AuthController {
     }
 
     private static String hash(String raw) {
-        try {
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            byte[] bytes = digest.digest(raw.getBytes(StandardCharsets.UTF_8));
-            return HexFormat.of().formatHex(bytes);
-        } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException(e);
-        }
+        return BCrypt.withDefaults().hashToString(BCRYPT_COST,raw.toCharArray());
     }
 
+    private static boolean verify(String raw, String hashed) {
+        if (hashed == null) return false;
+        return BCrypt.verifyer().verify(raw.toCharArray(), hashed).verified;
+    }
+    
     private static String getString(JsonObject obj, String key) {
         return obj.has(key) && !obj.get(key).isJsonNull() ? obj.get(key).getAsString() : null;
     }
