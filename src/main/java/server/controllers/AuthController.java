@@ -71,7 +71,7 @@ public class AuthController {
         store.deleteSession(getString(body, "token"));
         return Response.ok(requestId, null);
     }
-    
+
     public User requireAuth(JsonObject body) {
         Session session = store.getSession(getString(body, "token"));
         if (session == null) return null;
