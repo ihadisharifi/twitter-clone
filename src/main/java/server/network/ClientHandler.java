@@ -1,0 +1,71 @@
+package server.network;
+
+import com.google.gson.JsonParser;
+import server.controllers.AuthController;
+import server.controllers.ProfileController;
+import server.controllers.TweetController;
+import shared.protocol.MessageCodec;
+import shared.protocol.Request;
+import shared.protocol.Response;
+import shared.protocol.StatusCode;
+
+import java.io.*;
+import java.net.Socket;
+
+public class ClientHandler implements Runnable {
+    private final Socket socket;
+
+    private final AuthController authController = new AuthController();
+    private final ProfileController profileController = new ProfileController(authController);
+    private final TweetController tweetController = new TweetController(authController);
+
+    public ClientHandler(Socket socket) {
+        this.socket = socket;
+    }
+
+    @Override
+    public void run() {
+        try (
+                BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+                PrintWriter out = new PrintWriter(socket.getOutputStream(), true)
+        ) {
+            String raw;
+            while ((raw = in.readLine()) != null) {
+                Request request = MessageCodec.decodeRequest(raw);
+                System.out.println("Received: " + request.getType());
+
+                Response response = dispatch(request);
+                out.println(MessageCodec.encodeResponse(response));
+            }
+        } catch (IOException e) {
+            System.out.println("Client disconnected.");
+        }
+    }
+
+    private Response dispatch(Request request) {
+        try {
+            switch (request.getType()) {
+                case PING:
+                    return Response.ok(request.getRequestId(), JsonParser.parseString("\"pong\""));
+                case REGISTER:
+                    return authController.register(request.getRequestId(), request.getPayload());
+                case LOGIN:
+                    return authController.login(request.getRequestId(), request.getPayload());
+                case LOGOUT:
+                    return authController.logout(request.getRequestId(), request.getPayload());
+                case GET_PROFILE:
+                    return profileController.getProfile(request.getRequestId(), request.getPayload());
+                case UPDATE_PROFILE:
+                    return profileController.updateProfile(request.getRequestId(), request.getPayload());
+                case CREATE_TWEET:
+                    return tweetController.createTweet(request.getRequestId(), request.getPayload());
+                case DELETE_TWEET:
+                    return tweetController.deleteTweet(request.getRequestId(), request.getPayload());
+                default:
+                    return Response.error(request.getRequestId(), StatusCode.BAD_REQUEST, "Unsupported request type.");
+            }
+        } catch (Exception e) {
+            return Response.error(request.getRequestId(), StatusCode.SERVER_ERROR, "Server error: " + e.getMessage());
+        }
+    }
+}
