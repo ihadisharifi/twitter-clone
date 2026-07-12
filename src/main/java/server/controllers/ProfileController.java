@@ -34,7 +34,7 @@ public class ProfileController {
         }
         return Response.ok(requestId, gson.toJsonTree(target));
     }
-    
+
     public Response updateProfile(String requestId, JsonElement payload) {
         JsonObject body = payload.getAsJsonObject();
         User requester = authController.requireAuth(body);
