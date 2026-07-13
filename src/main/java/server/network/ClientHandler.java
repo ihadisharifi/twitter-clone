@@ -1,9 +1,7 @@
 package server.network;
 
 import com.google.gson.JsonParser;
-import server.controllers.AuthController;
-import server.controllers.ProfileController;
-import server.controllers.TweetController;
+import server.controllers.*;
 import shared.protocol.MessageCodec;
 import shared.protocol.Request;
 import shared.protocol.Response;
@@ -18,6 +16,10 @@ public class ClientHandler implements Runnable {
     private final AuthController authController = new AuthController();
     private final ProfileController profileController = new ProfileController(authController);
     private final TweetController tweetController = new TweetController(authController);
+    private final FeedController feedController = new FeedController(authController);
+    private final FollowController followController = new FollowController(authController);
+    private final LikeController likeController = new LikeController(authController);
+    private final SearchController searchController = new SearchController(authController);
 
     public ClientHandler(Socket socket) {
         this.socket = socket;
@@ -61,6 +63,30 @@ public class ClientHandler implements Runnable {
                     return tweetController.createTweet(request.getRequestId(), request.getPayload());
                 case DELETE_TWEET:
                     return tweetController.deleteTweet(request.getRequestId(), request.getPayload());
+                case GET_TWEET:
+                    return tweetController.getTweet(request.getRequestId(), request.getPayload());
+                case GET_USER_TWEETS:
+                    return tweetController.getUserTweets(request.getRequestId(), request.getPayload());
+                case FOLLOW:
+                    return followController.follow(request.getRequestId(), request.getPayload());
+                case UNFOLLOW:
+                    return followController.unfollow(request.getRequestId(), request.getPayload());
+                case GET_FOLLOWERS:
+                    return followController.getFollowers(request.getRequestId(), request.getPayload());
+                case GET_FOLLOWING:
+                    return followController.getFollowing(request.getRequestId(), request.getPayload());
+                case LIKE_TWEET:
+                    return likeController.likeTweet(request.getRequestId(), request.getPayload());
+                case UNLIKE_TWEET:
+                    return likeController.unlikeTweet(request.getRequestId(), request.getPayload());
+                case GET_FEED:
+                    return feedController.getFeed(request.getRequestId(), request.getPayload());
+                case SEARCH_USERS:
+                    return searchController.searchUsers(request.getRequestId(), request.getPayload());
+                case SEARCH_TWEETS:
+                    return searchController.searchTweets(request.getRequestId(), request.getPayload());
+                case SEARCH_HASHTAG:
+                    return searchController.searchHashtag(request.getRequestId(), request.getPayload());
                 default:
                     return Response.error(request.getRequestId(), StatusCode.BAD_REQUEST, "Unsupported request type.");
             }
