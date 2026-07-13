@@ -28,7 +28,7 @@ public class FeedController {
         if (requester == null) {
             return Response.error(requestId, StatusCode.UNAUTHORIZED, "Invalid or expired session.");
         }
-        
+
         List<Tweet> feed = new ArrayList<>(store.getTweetsByAuthor(requester.getId()));
         for (Integer followedId : store.getFollowingIds(requester.getId())) {
             feed.addAll(store.getTweetsByAuthor(followedId));
