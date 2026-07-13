@@ -3,6 +3,8 @@ package server.network;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class Server {
 
@@ -10,14 +12,18 @@ public class Server {
 
     public static void main(String[] args) {
         System.out.println("Server Started");
+        ExecutorService pool = Executors.newCachedThreadPool();
         try (ServerSocket serverSocket = new ServerSocket(PORT)) {
             while (true) {
                 Socket socket = serverSocket.accept();
                 System.out.println("Accepted connection from " + socket.getInetAddress().getHostName());
-                new Thread(new ClientHandler(socket)).start();
+                pool.execute(new ClientHandler(socket));
             }
         } catch (IOException e)  {
             e.printStackTrace();
+        }
+        finally {
+            pool.shutdown();
         }
     }
 }
