@@ -27,6 +27,20 @@ public class Response {
         return response;
     }
 
+
+    public static Response event(String eventType, JsonElement payload) {
+        Response response = new Response();
+        response.requestId = null;
+        response.status = StatusCode.OK;
+        response.message = eventType;
+        response.payload = payload;
+        return response;
+    }
+
+    public boolean isEvent() {
+        return requestId == null;
+    }
+
     public String getRequestId() { return requestId; }
     public StatusCode getStatus() { return status; }
     public String getMessage() { return message; }
