@@ -31,6 +31,11 @@ public class AuthController {
         if (isBlank(username) || isBlank(email) || isBlank(displayName) || isBlank(password)) {
             return Response.error(requestId, StatusCode.BAD_REQUEST, "All fields are required.");
         }
+
+        if (password.length() < 8) {
+            return Response.error(requestId, StatusCode.BAD_REQUEST, "Password must be at least 8 characters.");
+        }
+
         if (store.usernameTaken(username) || store.emailTaken(email)) {
             return Response.error(requestId, StatusCode.CONFLICT, "Username or email already exists.");
         }
