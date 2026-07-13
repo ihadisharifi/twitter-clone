@@ -40,6 +40,8 @@ public class FollowController {
             return Response.error(requestId, StatusCode.NOT_FOUND, "User not found.");
         }
 
+        store.follow(requester.getId(), targetId);
+
         JsonObject result = new JsonObject();
         result.addProperty("following", true);
         result.addProperty("followerCount", store.getFollowerIds(targetId).size());

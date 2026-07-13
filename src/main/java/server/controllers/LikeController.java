@@ -35,6 +35,8 @@ public class LikeController {
             return Response.error(requestId, StatusCode.NOT_FOUND, "Tweet not found.");
         }
 
+        store.likeTweet(requester.getId(), tweetId);
+        
         JsonObject result = new JsonObject();
         result.addProperty("liked", true);
         result.addProperty("likesCount", store.getLikeCount(tweetId));
