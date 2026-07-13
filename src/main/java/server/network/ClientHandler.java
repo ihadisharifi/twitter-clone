@@ -1,9 +1,11 @@
 package server.network;
 
+import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import server.controllers.*;
 import shared.protocol.MessageCodec;
 import shared.protocol.Request;
+import shared.protocol.RequestType;
 import shared.protocol.Response;
 import shared.protocol.StatusCode;
 
@@ -12,6 +14,9 @@ import java.net.Socket;
 
 public class ClientHandler implements Runnable {
     private final Socket socket;
+    private PrintWriter out;
+
+    private Integer connectedUserId = null;
 
     private final AuthController authController = new AuthController();
     private final ProfileController profileController = new ProfileController(authController);
@@ -29,18 +34,31 @@ public class ClientHandler implements Runnable {
     public void run() {
         try (
                 BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-                PrintWriter out = new PrintWriter(socket.getOutputStream(), true)
+                PrintWriter writer = new PrintWriter(socket.getOutputStream(), true)
         ) {
+            this.out = writer;
+
             String raw;
             while ((raw = in.readLine()) != null) {
                 Request request = MessageCodec.decodeRequest(raw);
                 System.out.println("Received: " + request.getType());
 
                 Response response = dispatch(request);
-                out.println(MessageCodec.encodeResponse(response));
+                writeToClient(response);
             }
         } catch (IOException e) {
             System.out.println("Client disconnected.");
+        } finally {
+            if (connectedUserId != null) {
+                ConnectionRegistry.get().unregister(connectedUserId);
+            }
+        }
+    }
+
+    private void writeToClient(Response response) {
+        String json = MessageCodec.encodeResponse(response);
+        synchronized (out) {
+            out.println(json);
         }
     }
 
@@ -49,11 +67,21 @@ public class ClientHandler implements Runnable {
             switch (request.getType()) {
                 case PING:
                     return Response.ok(request.getRequestId(), JsonParser.parseString("\"pong\""));
-                case REGISTER:
-                    return authController.register(request.getRequestId(), request.getPayload());
-                case LOGIN:
-                    return authController.login(request.getRequestId(), request.getPayload());
+                case REGISTER: {
+                    Response resp = authController.register(request.getRequestId(), request.getPayload());
+                    registerConnectionIfSuccessful(resp);
+                    return resp;
+                }
+                case LOGIN: {
+                    Response resp = authController.login(request.getRequestId(), request.getPayload());
+                    registerConnectionIfSuccessful(resp);
+                    return resp;
+                }
                 case LOGOUT:
+                    if (connectedUserId != null) {
+                        ConnectionRegistry.get().unregister(connectedUserId);
+                        connectedUserId = null;
+                    }
                     return authController.logout(request.getRequestId(), request.getPayload());
                 case GET_PROFILE:
                     return profileController.getProfile(request.getRequestId(), request.getPayload());
@@ -92,6 +120,17 @@ public class ClientHandler implements Runnable {
             }
         } catch (Exception e) {
             return Response.error(request.getRequestId(), StatusCode.SERVER_ERROR, "Server error: " + e.getMessage());
+        }
+    }
+
+    private void registerConnectionIfSuccessful(Response resp) {
+        if (resp.getStatus() != StatusCode.OK || resp.getPayload() == null) return;
+        try {
+            JsonObject payload = resp.getPayload().getAsJsonObject();
+            int userId = payload.getAsJsonObject("user").get("id").getAsInt();
+            this.connectedUserId = userId;
+            ConnectionRegistry.get().register(userId, out);
+        } catch (Exception ignored) {
         }
     }
 }
