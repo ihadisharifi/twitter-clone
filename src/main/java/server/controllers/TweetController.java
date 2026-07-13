@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import server.database.TempDataStore;
+import server.network.ConnectionRegistry;
 import shared.models.Tweet;
 import shared.models.User;
 import shared.protocol.Response;
@@ -11,6 +12,7 @@ import shared.protocol.StatusCode;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 public class TweetController {
 
@@ -54,7 +56,19 @@ public class TweetController {
 
         enrich(tweet, requester.getId());
         JsonObject tweetJson = gson.toJsonTree(tweet).getAsJsonObject();
+        notifyFollowersOfNewTweet(requester.getId(), tweetJson);
         return Response.ok(requestId, tweetJson);
+    }
+
+    private void notifyFollowersOfNewTweet(int authorId, JsonObject tweetJson) {
+        Set<Integer> followerIds = store.getFollowerIds(authorId);
+        if (followerIds.isEmpty()) return;
+
+        Response event = Response.event("NEW_TWEET", tweetJson);
+        ConnectionRegistry registry = ConnectionRegistry.get();
+        for (Integer followerId : followerIds) {
+            registry.sendTo(followerId, event);
+        }
     }
 
     public Response deleteTweet(String requestId, JsonElement payload) {
