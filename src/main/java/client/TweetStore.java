@@ -1,5 +1,7 @@
 package client;
 
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -7,6 +9,7 @@ import java.util.List;
 /**
  * In-memory tweet store that survives scene switches.
  * Supports original posts, retweets (reposted by the current user), and replies.
+ * Each entry stores a real {@link Instant} creation time for Twitter-style relative labels.
  */
 public class TweetStore {
 
@@ -30,11 +33,12 @@ public class TweetStore {
             return;
         }
         seeded = true;
+        Instant now = Instant.now();
         addTweetInternal(
                 "Just deployed the new centralized Navigation Pipeline! Everything feels smooth. #JavaFX #XClone",
                 "developer",
                 "Guest",
-                "2h",
+                now.minus(2, ChronoUnit.HOURS),
                 null,
                 null,
                 null,
@@ -44,7 +48,7 @@ public class TweetStore {
                 "Designing atomic layouts with inline CSS components is highly efficient for dark themes.",
                 "developer",
                 "Guest",
-                "1d",
+                now.minus(1, ChronoUnit.DAYS),
                 null,
                 null,
                 null,
@@ -54,7 +58,7 @@ public class TweetStore {
 
     /** Original post (not a retweet card). */
     public synchronized StoredTweet addTweet(String content, String username, String displayName) {
-        return addTweetInternal(content, username, displayName, "now", null, null, null, null);
+        return addTweetInternal(content, username, displayName, Instant.now(), null, null, null, null);
     }
 
     /**
@@ -72,7 +76,7 @@ public class TweetStore {
                 content.trim(),
                 username != null ? username : "user",
                 displayName != null ? displayName : "User",
-                "now",
+                Instant.now(),
                 root.getId(),
                 null,
                 root.getAuthorUsername(),
@@ -114,7 +118,7 @@ public class TweetStore {
                 original.getContent(),
                 username,
                 displayName,
-                "now",
+                Instant.now(),
                 null,
                 original.getId(),
                 original.getAuthorUsername(),
@@ -133,6 +137,60 @@ public class TweetStore {
         // Likes apply to the original content for retweet cards
         StoredTweet target = resolveOriginal(tweet);
         return target.toggleLike();
+    }
+
+    /**
+     * Deletes a tweet owned by {@code username}.
+     * <ul>
+     *   <li>Original post → removes its replies and all retweet cards of it</li>
+     *   <li>Reply → removes the reply and decrements the parent reply count</li>
+     *   <li>Retweet card → removes only that repost and decrements the original count</li>
+     * </ul>
+     *
+     * @return true if something was deleted
+     */
+    public synchronized boolean deleteTweet(int tweetId, String username) {
+        StoredTweet tweet = findById(tweetId);
+        if (tweet == null || username == null) {
+            return false;
+        }
+        if (!username.equals(tweet.getAuthorUsername())) {
+            return false; // only the author can delete
+        }
+
+        if (tweet.isRetweet()) {
+            StoredTweet original = tweet.getRetweetOfId() != null
+                    ? findById(tweet.getRetweetOfId())
+                    : null;
+            tweets.remove(tweet);
+            if (original != null) {
+                original.decrementRetweets();
+                if (username.equals(tweet.getAuthorUsername())) {
+                    original.setRetweetedByCurrentUser(false);
+                }
+            }
+            return true;
+        }
+
+        if (tweet.isReply()) {
+            StoredTweet parent = tweet.getReplyToId() != null
+                    ? findById(tweet.getReplyToId())
+                    : null;
+            tweets.remove(tweet);
+            if (parent != null) {
+                parent.decrementReplies();
+            }
+            return true;
+        }
+
+        // Original root post: cascade delete replies + retweet cards
+        int id = tweet.getId();
+        tweets.removeIf(t ->
+                t.getId() == id
+                        || (t.isReply() && t.getReplyToId() != null && t.getReplyToId() == id)
+                        || (t.isRetweet() && t.getRetweetOfId() != null && t.getRetweetOfId() == id)
+        );
+        return true;
     }
 
     public synchronized StoredTweet findById(int id) {
@@ -230,7 +288,7 @@ public class TweetStore {
             String content,
             String username,
             String displayName,
-            String timeAgo,
+            Instant createdAt,
             Integer replyToId,
             Integer retweetOfId,
             String originalAuthorUsername,
@@ -241,7 +299,7 @@ public class TweetStore {
                 content,
                 username != null ? username : "user",
                 displayName != null ? displayName : "User",
-                timeAgo,
+                createdAt != null ? createdAt : Instant.now(),
                 replyToId,
                 retweetOfId,
                 originalAuthorUsername,
@@ -256,7 +314,7 @@ public class TweetStore {
         private final String content;
         private final String authorUsername;
         private final String authorDisplayName;
-        private final String timeAgo;
+        private final Instant createdAt;
 
         /** Parent original tweet id when this is a reply. */
         private final Integer replyToId;
@@ -277,7 +335,7 @@ public class TweetStore {
                 String content,
                 String authorUsername,
                 String authorDisplayName,
-                String timeAgo,
+                Instant createdAt,
                 Integer replyToId,
                 Integer retweetOfId,
                 String originalAuthorUsername,
@@ -287,7 +345,7 @@ public class TweetStore {
             this.content = content;
             this.authorUsername = authorUsername;
             this.authorDisplayName = authorDisplayName;
-            this.timeAgo = timeAgo;
+            this.createdAt = createdAt != null ? createdAt : Instant.now();
             this.replyToId = replyToId;
             this.retweetOfId = retweetOfId;
             this.originalAuthorUsername = originalAuthorUsername;
@@ -298,7 +356,12 @@ public class TweetStore {
         public String getContent() { return content; }
         public String getAuthorUsername() { return authorUsername; }
         public String getAuthorDisplayName() { return authorDisplayName; }
-        public String getTimeAgo() { return timeAgo; }
+        public Instant getCreatedAt() { return createdAt; }
+
+        /** Live Twitter-style relative label (recomputed from {@link #createdAt}). */
+        public String getTimeAgo() {
+            return TweetTimeFormatter.formatRelative(createdAt);
+        }
 
         public Integer getReplyToId() { return replyToId; }
         public Integer getRetweetOfId() { return retweetOfId; }
@@ -320,6 +383,7 @@ public class TweetStore {
         }
 
         void incrementReplies() { replies++; }
+        void decrementReplies() { replies = Math.max(0, replies - 1); }
         void incrementRetweets() { retweets++; }
         void decrementRetweets() { retweets = Math.max(0, retweets - 1); }
 

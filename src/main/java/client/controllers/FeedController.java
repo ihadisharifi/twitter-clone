@@ -3,19 +3,27 @@ package client.controllers;
 import client.NavigationManager;
 import client.TweetStore;
 import client.TweetStore.StoredTweet;
+import client.TweetTimeFormatter;
 import client.UserSession;
+import javafx.animation.Animation;
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
 import javafx.fxml.FXML;
 import javafx.geometry.Insets;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextArea;
+import javafx.scene.control.Tooltip;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
+import javafx.util.Duration;
 
+import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 
 public class FeedController {
@@ -39,10 +47,17 @@ public class FeedController {
                     + "-fx-border-color: #333333; -fx-border-radius: 8; -fx-background-radius: 8;";
     private static final String STYLE_POST_BTN =
             "-fx-background-color: #1d9bf0; -fx-text-fill: #ffffff; -fx-background-radius: 20; -fx-font-weight: bold;";
+    private static final String STYLE_DELETE_BTN =
+            "-fx-background-color: transparent; -fx-text-fill: #f4212e; -fx-padding: 0; -fx-cursor: hand; -fx-font-size: 14;";
+
+    /** Labels that need Twitter-style relative times refreshed while the feed is open. */
+    private final List<TimestampLabel> liveTimestamps = new ArrayList<>();
+    private Timeline timeRefreshTimeline;
 
     @FXML
     public void initialize() {
         loadTimeline();
+        startTimestampRefresh();
     }
 
     @FXML
@@ -62,12 +77,50 @@ public class FeedController {
 
     private void loadTimeline() {
         timelineContainer.getChildren().clear();
+        liveTimestamps.clear();
 
         TweetStore store = TweetStore.getInstance();
         store.seedIfEmpty();
 
         for (StoredTweet tweet : store.getTimelineTweets()) {
             renderTweetCard(tweet, false);
+        }
+    }
+
+    private void startTimestampRefresh() {
+        if (timeRefreshTimeline != null) {
+            timeRefreshTimeline.stop();
+        }
+        // Refresh relative labels so "now" → "1s" → "1m" while the user stays on Home
+        timeRefreshTimeline = new Timeline(
+                new KeyFrame(Duration.seconds(15), e -> refreshLiveTimestamps())
+        );
+        timeRefreshTimeline.setCycleCount(Animation.INDEFINITE);
+        timeRefreshTimeline.play();
+    }
+
+    private void refreshLiveTimestamps() {
+        for (TimestampLabel entry : liveTimestamps) {
+            entry.label.setText(TweetTimeFormatter.formatFeedDot(entry.createdAt));
+        }
+    }
+
+    private Label createTimestampLabel(Instant createdAt) {
+        Label timestamp = new Label(TweetTimeFormatter.formatFeedDot(createdAt));
+        timestamp.setTextFill(Color.web("#71767b"));
+        timestamp.setFont(Font.font("System", 14));
+        Tooltip.install(timestamp, new Tooltip(TweetTimeFormatter.formatAbsolute(createdAt)));
+        liveTimestamps.add(new TimestampLabel(timestamp, createdAt));
+        return timestamp;
+    }
+
+    private static final class TimestampLabel {
+        final Label label;
+        final Instant createdAt;
+
+        TimestampLabel(Label label, Instant createdAt) {
+            this.label = label;
+            this.createdAt = createdAt;
         }
     }
 
@@ -82,7 +135,7 @@ public class FeedController {
             card.setStyle("-fx-border-color: #222222; -fx-border-width: 0 0 1 0; -fx-padding: 10 12 10 36;");
         }
 
-        // Retweet / reply context line
+        // Retweet context line
         if (tweet.isRetweet()) {
             Label repostLabel = new Label("🔁 " + safeName(tweet.getAuthorDisplayName()) + " reposted");
             repostLabel.setTextFill(Color.web("#71767b"));
@@ -135,11 +188,17 @@ public class FeedController {
         userHandle.setTextFill(Color.web("#71767b"));
         userHandle.setFont(Font.font("System", 14));
 
-        Label timestamp = new Label("· " + tweet.getTimeAgo());
-        timestamp.setTextFill(Color.web("#71767b"));
-        timestamp.setFont(Font.font("System", 14));
+        Label timestamp = createTimestampLabel(tweet.getCreatedAt());
 
         headerRow.getChildren().addAll(displayName, userHandle, timestamp);
+
+        // Delete only on posts you authored (original, retweet card, or reply)
+        if (isOwnedByCurrentUser(tweet)) {
+            javafx.scene.layout.Region spacer = new javafx.scene.layout.Region();
+            HBox.setHgrow(spacer, Priority.ALWAYS);
+            Button deleteButton = createDeleteButton(tweet.getId(), () -> loadTimeline());
+            headerRow.getChildren().addAll(spacer, deleteButton);
+        }
 
         Label bodyText = new Label(tweet.getContent());
         bodyText.setTextFill(Color.web("#e7e9ea"));
@@ -268,11 +327,17 @@ public class FeedController {
         handle.setTextFill(Color.web("#71767b"));
         handle.setFont(Font.font("System", 13));
 
-        Label time = new Label("· " + reply.getTimeAgo());
-        time.setTextFill(Color.web("#71767b"));
+        Label time = createTimestampLabel(reply.getCreatedAt());
         time.setFont(Font.font("System", 13));
 
         header.getChildren().addAll(name, handle, time);
+
+        if (isOwnedByCurrentUser(reply)) {
+            javafx.scene.layout.Region spacer = new javafx.scene.layout.Region();
+            HBox.setHgrow(spacer, Priority.ALWAYS);
+            // Reload whole feed so parent reply counts stay correct
+            header.getChildren().addAll(spacer, createDeleteButton(reply.getId(), () -> loadTimeline()));
+        }
 
         Label body = new Label(reply.getContent());
         body.setTextFill(Color.web("#e7e9ea"));
@@ -282,6 +347,22 @@ public class FeedController {
 
         node.getChildren().addAll(header, body);
         return node;
+    }
+
+    private Button createDeleteButton(int tweetId, Runnable afterDelete) {
+        Button deleteButton = new Button("🗑");
+        deleteButton.setStyle(STYLE_DELETE_BTN);
+        deleteButton.setOnAction(event -> {
+            boolean deleted = TweetStore.getInstance().deleteTweet(tweetId, currentUsername());
+            if (deleted && afterDelete != null) {
+                afterDelete.run();
+            }
+        });
+        return deleteButton;
+    }
+
+    private boolean isOwnedByCurrentUser(StoredTweet tweet) {
+        return currentUsername().equals(tweet.getAuthorUsername());
     }
 
     private StoredTweet engagementTarget(StoredTweet tweet) {

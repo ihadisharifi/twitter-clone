@@ -3,15 +3,26 @@ package client.controllers;
 import client.NavigationManager;
 import client.TweetStore;
 import client.TweetStore.StoredTweet;
+import client.TweetTimeFormatter;
 import client.UserSession;
+import javafx.animation.Animation;
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
 import javafx.fxml.FXML;
+import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.control.Tooltip;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
+import javafx.util.Duration;
 
+import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 
 public class ProfileController {
@@ -30,9 +41,47 @@ public class ProfileController {
     @FXML
     private Label bioLabel;
 
+    private final List<TimestampLabel> liveTimestamps = new ArrayList<>();
+    private Timeline timeRefreshTimeline;
+
     @FXML
     public void initialize() {
         refreshProfileData();
+        startTimestampRefresh();
+    }
+
+    private void startTimestampRefresh() {
+        if (timeRefreshTimeline != null) {
+            timeRefreshTimeline.stop();
+        }
+        timeRefreshTimeline = new Timeline(
+                new KeyFrame(Duration.seconds(15), e -> {
+                    for (TimestampLabel entry : liveTimestamps) {
+                        entry.label.setText(TweetTimeFormatter.formatFeedDot(entry.createdAt));
+                    }
+                })
+        );
+        timeRefreshTimeline.setCycleCount(Animation.INDEFINITE);
+        timeRefreshTimeline.play();
+    }
+
+    private Label createTimestampLabel(Instant createdAt) {
+        Label timestamp = new Label(TweetTimeFormatter.formatFeedDot(createdAt));
+        timestamp.setFont(Font.font("System", 14));
+        timestamp.setTextFill(Color.web("#71767b"));
+        Tooltip.install(timestamp, new Tooltip(TweetTimeFormatter.formatAbsolute(createdAt)));
+        liveTimestamps.add(new TimestampLabel(timestamp, createdAt));
+        return timestamp;
+    }
+
+    private static final class TimestampLabel {
+        final Label label;
+        final Instant createdAt;
+
+        TimestampLabel(Label label, Instant createdAt) {
+            this.label = label;
+            this.createdAt = createdAt;
+        }
     }
 
     private void loadUserOwnTweets() {
@@ -104,11 +153,28 @@ public class ProfileController {
         userHandle.setFont(Font.font("System", 14));
         userHandle.setTextFill(Color.web("#71767b"));
 
-        Label timestamp = new Label("· " + tweet.getTimeAgo());
-        timestamp.setFont(Font.font("System", 14));
-        timestamp.setTextFill(Color.web("#71767b"));
+        Label timestamp = createTimestampLabel(tweet.getCreatedAt());
 
         headerRow.getChildren().addAll(displayName, userHandle, timestamp);
+
+        // Profile only lists this user's posts — always offer delete
+        Region spacer = new Region();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
+        Button deleteButton = new Button("🗑");
+        deleteButton.setStyle(
+                "-fx-background-color: transparent; -fx-text-fill: #f4212e; -fx-padding: 0; "
+                        + "-fx-cursor: hand; -fx-font-size: 14;"
+        );
+        deleteButton.setOnAction(event -> {
+            String username = UserSession.getInstance().getUsername();
+            if (username == null) {
+                username = "developer";
+            }
+            if (TweetStore.getInstance().deleteTweet(tweet.getId(), username)) {
+                refreshProfileData();
+            }
+        });
+        headerRow.getChildren().addAll(spacer, deleteButton);
 
         Label bodyText = new Label(tweet.getContent());
         bodyText.setFont(Font.font("System", 15));
@@ -158,6 +224,7 @@ public class ProfileController {
         }
 
         userTweetsContainer.getChildren().clear();
+        liveTimestamps.clear();
         loadUserOwnTweets();
     }
 }
