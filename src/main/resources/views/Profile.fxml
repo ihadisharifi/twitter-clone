@@ -81,7 +81,7 @@
                                         </VBox>
 
                                         <!-- Bio -->
-                                        <Label text="sample Bio!" textFill="WHITE" wrapText="true"><font><Font size="14.0" /></font></Label>
+                                        <Label fx:id="bioLabel" text="sample Bio!" textFill="WHITE" wrapText="true"><font><Font size="14.0" /></font></Label>
 
                                         <!-- Following / Followers stats -->
                                         <HBox spacing="20.0" style="-fx-padding: 5 0 0 0;">

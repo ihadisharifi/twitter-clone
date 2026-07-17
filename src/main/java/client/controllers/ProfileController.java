@@ -29,28 +29,12 @@ public class ProfileController {
     private VBox userTweetsContainer;
 
     @FXML
+    private Label bioLabel;
+
+    @FXML
     public void initialize() {
-        // Taking users information from active session
-        String activeUsername = client.UserSession.getInstance().getUsername();
-        String activeDisplayName = client.UserSession.getInstance().getDisplayName();
-
-        // Filling the profile graphic labels with real information
-        if (activeDisplayName != null){
-            nameLabel.setText(activeDisplayName);
-            headerNameLabel.setText(activeDisplayName);
-        }
-        else {
-            nameLabel.setText("Active User");
-            headerNameLabel.setText("Active User");
-        }
-
-        if (activeUsername != null){
-            usernameLabel.setText("@" + activeUsername);
-        }
-        else {
-            usernameLabel.setText("@user");
-        }
-        loadUserOwnTweets();
+        // Refresh data when the viewport is loaded
+        refreshProfileData();
     }
 
     /**
@@ -82,11 +66,14 @@ public class ProfileController {
         VBox contentStack = new VBox(4);
         HBox headerRow = new HBox(8);
 
-        Label displayName = new Label("Sample");
+        // FIXED: Extract live user credentials dynamically from the active UserSession to display on personal tweet cards
+        String activeDisplayName = UserSession.getInstance().getDisplayName();
+        Label displayName = new Label(activeDisplayName != null ? activeDisplayName : "Active User");
         displayName.setFont(Font.font("System", FontWeight.BOLD, 15));
         displayName.setTextFill(Color.WHITE);
 
-        Label userHandle = new Label("@developer");
+        String activeUsername = UserSession.getInstance().getUsername();
+        Label userHandle = new Label(activeUsername != null ? "@" + activeUsername : "@user");
         userHandle.setFont(Font.font("System", 14));
         userHandle.setTextFill(Color.web("#71767b"));
 
@@ -105,7 +92,7 @@ public class ProfileController {
         contentStack.getChildren().addAll(headerRow, bodyText);
         tweetRow.getChildren().addAll(avatarBox, contentStack);
 
-        userTweetsContainer.getChildren().add(tweetRow);
+        userTweetsContainer.getChildren().addFirst(tweetRow);
     }
 
     /**
@@ -124,5 +111,37 @@ public class ProfileController {
         // TERMINATING ACTIVE USER SESSION CONTEXT
         UserSession.getInstance().clearSession();
         NavigationManager.switchScene("/views/Login.fxml");
+    }
+
+    /**
+     * Dynamically pulls the latest logged-in credentials from the active session
+     * and refreshes all visual UI nodes on the profile screen.
+     */
+    public void refreshProfileData() {
+        shared.models.User currentUser = UserSession.getInstance().getCurrentUser();
+
+        if (currentUser != null) {
+            // Populate profile UI nodes dynamically using user-provided credentials
+            String activeDisplayName = currentUser.getDisplayName();
+            String activeUsername = currentUser.getUsername();
+            String activeBio = currentUser.getBio();
+
+            nameLabel.setText(activeDisplayName != null ? activeDisplayName : "Active User");
+            headerNameLabel.setText(activeDisplayName != null ? activeDisplayName : "Active User");
+            usernameLabel.setText(activeUsername != null ? "@" + activeUsername : "@user");
+
+            if (bioLabel != null) {
+                bioLabel.setText(activeBio != null ? activeBio : "No bio available");
+            }
+        }
+        else {
+            nameLabel.setText("Active User");
+            headerNameLabel.setText("Active User");
+            usernameLabel.setText("@user");
+        }
+
+        // Clear previous mock rendering to prevent stacking duplicate cards
+        userTweetsContainer.getChildren().clear();
+        loadUserOwnTweets();
     }
 }

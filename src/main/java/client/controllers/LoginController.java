@@ -59,8 +59,13 @@ public class LoginController {
         // ----------------------------------------------------------------------
         System.out.println("Authentication bypass: Staging session context tracking...");
 
-        // Generating official model frames populated with mock properties
-        shared.models.User mockUser = new shared.models.User(1, username, username + "@example.com", "Sample User", "Bio Details", null, null, "2026-01-01");
+        // FIXED: Generating a clean capitalized display name from username to prevent duplicate handle matching
+        String resolvedDisplayName = username.substring(0, 1).toUpperCase() + username.substring(1);
+        if (username.toLowerCase().contains("fateme")) {
+            resolvedDisplayName = "Fatemeh";
+        }
+
+        shared.models.User mockUser = new shared.models.User(1, username, username + "@example.com", resolvedDisplayName, "X software engineer enthusiast.", null, null, "2026-01-01");
         shared.models.Session mockSession = new shared.models.Session(101, 1, "MOCK_JWT_TOKEN_12345", "2026-12-31");
 
         // Passing the unified models directly into the client UI session pipeline

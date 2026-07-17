@@ -50,21 +50,17 @@ public class RegisterController {
             return;
         }
 
-        System.out.println("Registration bypass: Routing user to the main timeline feed...");
-        NavigationManager.switchScene("/views/feed.fxml");
-        if (true) return;
-
         // ----------------------------------------------------------------------
         // DEVELOPMENT MOCK BYPASS: Active for offline visual compilation tasks
         // ----------------------------------------------------------------------
         System.out.println("Registration bypass: Staging session context tracking...");
 
-        // Generating official model frames populated with registration inputs
-        shared.models.User newUser = new shared.models.User(2, username, email, displayName, "Hello 𝕏!", null, null, "2026-07-16");
-        shared.models.Session newSession = new shared.models.Session(102, 2, "MOCK_JWT_TOKEN_67890", "2026-12-31");
+        // FIXED: Using real inputs from text fields instead of hardcoded strings
+        shared.models.User mockUser = new shared.models.User(2, username, email, displayName, "Hello 𝕏!", null, null, "2026-07-16");
+        shared.models.Session mockSession = new shared.models.Session(102, 2, "MOCK_JWT_TOKEN_67890", "2026-12-31");
 
         // Staging user credentials instantly inside the active UI memory channel
-        client.UserSession.getInstance().startSession(newUser, newSession);
+        client.UserSession.getInstance().startSession(mockUser, mockSession);
 
         NavigationManager.switchScene("/views/Feed.fxml");
         if (true) return;

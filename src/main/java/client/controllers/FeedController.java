@@ -41,8 +41,14 @@ public class FeedController {
             return;
         }
 
-        // Dynamically inject the newly composed tweet at the very top of the scrollable timeline
-        renderAdvancedTweetCard(content, "0s", 0, 0, 0);
+        // Pull active user credentials dynamically from session for the new post author info
+        String activeName = UserSession.getInstance().getDisplayName();
+        String activeUsername = UserSession.getInstance().getUsername();
+
+        // Dynamically inject the newly composed tweet at the top using the active user's credentials
+        renderAdvancedTweetCard(activeName != null ? activeName : "Active User",
+                activeUsername != null ? activeUsername :"user", content, "0s", 0, 0, 0);
+
         tweetTextArea.clear();
     }
 
@@ -50,9 +56,25 @@ public class FeedController {
      * Generates custom sample datasets for verification.
      */
     private void loadMockTimeline() {
-        List<String> mockContents = new ArrayList<>();
-        mockContents.add("Just deployed the new centralized Navigation Pipeline! Everything feels smooth. #JavaFX #XClone");
-        mockContents.add("Designing atomic layouts with inline CSS components is highly efficient for dark themes.");
+        // FIXED: Rendering mock tweets written by other users with diverse metrics
+        renderAdvancedTweetCard(
+                "JavaFX Architect",
+                "javafx_dev",
+                "Designing atomic layouts with inline CSS components is highly efficient for dark themes.",
+                "3h",
+                12,
+                2,
+                5
+        );
+        renderAdvancedTweetCard(
+                "X Clone Official",
+                "x_clone",
+                "Just deployed the new centralized Navigation Pipeline! Everything feels smooth. #JavaFX #XClone",
+                "1d",
+                45,
+                8,
+                14
+        );
     }
 
     /**
@@ -64,7 +86,7 @@ public class FeedController {
      * @param initialReplies Starting counter value for the reply action button
      * @param initialRetweets Starting counter value for the retweet action button
      */
-    private void renderAdvancedTweetCard(String textContent, String timeAgo, int initialLikes, int initialReplies, int initialRetweets) {
+    private void renderAdvancedTweetCard(String authorName, String authorUsername, String textContent, String timeAgo, int initialLikes, int initialReplies, int initialRetweets) {
         // Main horizontal container to isolate profile picture from text context
         HBox tweetRow = new HBox(12);
         tweetRow.setStyle("-fx-border-color: #333333; -fx-border-width: 0 0 1 0; -fx-padding: 12 16 12 16;");
@@ -82,17 +104,13 @@ public class FeedController {
         // Metadata Header Row: Display Name -> Handle -> Timestamp
         HBox headerRow = new HBox(8);
 
-        // Dynamic configuration using the active user session context:
-        String activeName = UserSession.getInstance().getDisplayName();
-        if (activeName == null) activeName = "Guest";
-        Label displayName = new Label(activeName);
-
+        // FIXED: Display Name now renders the passed author parameter instead of the active session context
+        Label displayName = new Label(authorName);
         displayName.setTextFill(Color.WHITE);
         displayName.setFont(Font.font("System", FontWeight.BOLD, 15));
 
-        String activeUsername = UserSession.getInstance().getUsername();
-        if (activeUsername == null) activeUsername = "developer";
-        Label userHandle = new Label("@" + activeUsername);
+        // FIXED: Handle now renders the passed author parameter instead of the active session context
+        Label userHandle = new Label("@" + authorUsername);
         userHandle.setTextFill(Color.web("#71767b"));
         userHandle.setFont(Font.font("System", 14));
 
@@ -109,10 +127,8 @@ public class FeedController {
         bodyText.setWrapText(true);
         bodyText.setMaxWidth(420);
 
-        // Interaction Action Toolbar Row (Reply, Retweet, Like Mock placeholders)
         HBox actionToolbar = new HBox(40);
         actionToolbar.setStyle("-fx-padding: 6 0 0 0;");
-
         // MENTION BUTTON
         Button replyButton = new Button("💬 " + initialReplies);
         replyButton.setStyle("-fx-background-color: transparent; -fx-text-fill: #71767b; -fx-padding: 0; -fx-cursor: hand;");
