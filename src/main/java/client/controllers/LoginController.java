@@ -8,15 +8,16 @@ import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
 import client.network.serverConnection;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonPrimitive;
 import shared.protocol.Request;
 import shared.protocol.RequestType;
 import shared.protocol.Response;
 import shared.protocol.StatusCode;
-import shared.protocol.MessageCodec;
+
 import java.util.UUID;
 
-public class loginController {
+import client.UserSession;
+
+public class LoginController {
 
     // UI elements from FXML
     @FXML
@@ -54,11 +55,19 @@ public class loginController {
         String password = passwordField.getText();
 
         // ----------------------------------------------------------------------
-        // DEVELOPMENT MOCK BYPASS: Lets you login instantly during frontend testing.
-        // Remove or comment this block out once the server/database is integrated.
-        System.out.println("Authentication bypass: Routing user to the main timeline feed...");
-        NavigationManager.switchScene("/views/feed.fxml");
-        if (true) return; // Safely halts further execution, isolating backend code
+        // DEVELOPMENT MOCK BYPASS: Active for offline visual compilation tasks
+        // ----------------------------------------------------------------------
+        System.out.println("Authentication bypass: Staging session context tracking...");
+
+        // Generating official model frames populated with mock properties
+        shared.models.User mockUser = new shared.models.User(1, username, username + "@example.com", username, "Bio Details", null, null, "2026-01-01");
+        shared.models.Session mockSession = new shared.models.Session(101, 1, "MOCK_JWT_TOKEN_12345", "2026-12-31");
+
+        // Passing the unified models directly into the client UI session pipeline
+        UserSession.getInstance().startSession(mockUser, mockSession);
+
+        NavigationManager.switchScene("/views/Feed.fxml");
+        if (true) return;
         // ----------------------------------------------------------------------
 
         // Step 1: Client-side validation
@@ -83,11 +92,10 @@ public class loginController {
             // Step 5: Process Server Response
             if (response != null) {
                 if (response.getStatus() == StatusCode.OK) {
-                    errorLabel.setStyle("-fx-text-fill: #00ba7c;"); // X green
+                    errorLabel.setStyle("-fx-text-fill: #00ba7c;");
                     errorLabel.setText("Login successful! Redirecting...");
 
-                    // INSTALLED ROUTING LINK: Wired for real production integration
-                    NavigationManager.switchScene("/views/feed.fxml");
+                    NavigationManager.switchScene("/views/Feed.fxml");
                 }
                 else if (response.getStatus() == StatusCode.UNAUTHORIZED) {
                     errorLabel.setText("Invalid username or password.");
@@ -118,6 +126,6 @@ public class loginController {
      */
     @FXML
     private void handleGoToRegister() {
-        NavigationManager.switchScene("/views/register.fxml");
+        NavigationManager.switchScene("/views/Register.fxml");
     }
 }

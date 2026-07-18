@@ -14,7 +14,7 @@ import shared.protocol.StatusCode;
 
 import java.util.UUID;
 
-public class registerController {
+public class RegisterController {
 
     @FXML
     private TextField displayNameField;
@@ -50,6 +50,22 @@ public class registerController {
             return;
         }
 
+        // ----------------------------------------------------------------------
+        // DEVELOPMENT MOCK BYPASS: Active for offline visual compilation tasks
+        // ----------------------------------------------------------------------
+        System.out.println("Registration bypass: Staging session context tracking...");
+
+        // FIXED: Using real inputs from text fields instead of hardcoded strings
+        shared.models.User mockUser = new shared.models.User(2, username, email, displayName, "Hello 𝕏!", null, null, "2026-07-16");
+        shared.models.Session mockSession = new shared.models.Session(102, 2, "MOCK_JWT_TOKEN_67890", "2026-12-31");
+
+        // Staging user credentials instantly inside the active UI memory channel
+        client.UserSession.getInstance().startSession(mockUser, mockSession);
+
+        NavigationManager.switchScene("/views/Feed.fxml");
+        if (true) return;
+        // ----------------------------------------------------------------------
+
         try {
             // Package registration data into a uniform JSON object payload
             JsonObject registerPayload = new JsonObject();
@@ -71,10 +87,10 @@ public class registerController {
             // Process standard response status codes from network protocol
             if (response != null) {
                 if (response.getStatus() == StatusCode.OK) {
-                    errorLabel.setStyle("-fx-text-fill: #00ba7c;"); // X client green for success
-                    errorLabel.setText("Account created successfully! Rerouting to login...");
+                    errorLabel.setStyle("-fx-text-fill: #00ba7c;");
+                    errorLabel.setText("Account created successfully! Welcome ...");
                     // Reroute to login context so user can authenticate
-                    NavigationManager.switchScene("/views/login.fxml");
+                    NavigationManager.switchScene("/views/Feed.fxml");
                 }
                 else if (response.getStatus() == StatusCode.BAD_REQUEST) {
                     errorLabel.setText("Registration rejected: Username or email already exists.");
@@ -103,6 +119,6 @@ public class registerController {
      */
     @FXML
     private void handleBackToLogin() {
-        NavigationManager.switchScene("/views/login.fxml");
+        NavigationManager.switchScene("/views/Login.fxml");
     }
 }
