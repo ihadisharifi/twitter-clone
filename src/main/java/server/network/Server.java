@@ -5,6 +5,8 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import server.database.DatabaseInitializer;
+
 
 public class Server {
 
@@ -12,6 +14,7 @@ public class Server {
 
     public static void main(String[] args) {
         System.out.println("Server Started");
+        DatabaseInitializer.run();
         ExecutorService pool = Executors.newCachedThreadPool();
         try (ServerSocket serverSocket = new ServerSocket(PORT)) {
             while (true) {
