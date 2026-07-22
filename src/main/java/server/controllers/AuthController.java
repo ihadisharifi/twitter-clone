@@ -92,11 +92,6 @@ public class AuthController {
         }
     }
 
-    /**
-     * Used by every other controller to resolve the calling user from a session token.
-     * Returns null on any failure (missing/expired session, or a DB error) — callers
-     * already treat a null user as "unauthorized".
-     */
     public User requireAuth(JsonObject body) {
         try {
             Session session = sessionDao.getSession(getString(body, "token"));
