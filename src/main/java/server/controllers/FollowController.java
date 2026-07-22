@@ -4,16 +4,23 @@ import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import server.database.TempDataStore;
+import server.database.dao.FollowDao;
+import server.database.dao.TweetDao;
+import server.database.dao.UserDao;
 import shared.models.User;
 import shared.protocol.Response;
 import shared.protocol.StatusCode;
 
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
 public class FollowController {
 
-    private final TempDataStore store = TempDataStore.get();
+//    private final TempDataStore store = TempDataStore.get();
+    private final UserDao userDao = new UserDao();
+    private final TweetDao tweetDao = new TweetDao();
+    private final FollowDao followDao = new FollowDao();
     private final Gson gson = new Gson();
     private final AuthController authController;
 
@@ -35,17 +42,22 @@ public class FollowController {
         if (targetId == requester.getId()) {
             return Response.error(requestId, StatusCode.BAD_REQUEST, "You cannot follow yourself.");
         }
-        User target = store.getUserById(targetId);
-        if (target == null) {
-            return Response.error(requestId, StatusCode.NOT_FOUND, "User not found.");
+        try {
+
+            User target = userDao.getUserById(targetId);
+            if (target == null) {
+                return Response.error(requestId, StatusCode.NOT_FOUND, "User not found.");
+            }
+
+            followDao.follow(requester.getId(), targetId);
+
+            JsonObject result = new JsonObject();
+            result.addProperty("following", true);
+            result.addProperty("followerCount", followDao.getFollowerIds(targetId).size());
+            return Response.ok(requestId, result);
+        } catch (SQLException e) {
+            return Response.error(requestId,StatusCode.SERVER_ERROR,"Database error: "+e.getMessage());
         }
-
-        store.follow(requester.getId(), targetId);
-
-        JsonObject result = new JsonObject();
-        result.addProperty("following", true);
-        result.addProperty("followerCount", store.getFollowerIds(targetId).size());
-        return Response.ok(requestId, result);
     }
 
     public Response unfollow(String requestId, JsonElement payload) {
@@ -58,13 +70,17 @@ public class FollowController {
             return Response.error(requestId, StatusCode.BAD_REQUEST, "userId is required.");
         }
 
-        int targetId = body.get("userId").getAsInt();
-        store.unfollow(requester.getId(), targetId);
+        try {
+            int targetId = body.get("userId").getAsInt();
+            followDao.unfollow(requester.getId(), targetId);
 
-        JsonObject result = new JsonObject();
-        result.addProperty("following", false);
-        result.addProperty("followerCount", store.getFollowerIds(targetId).size());
-        return Response.ok(requestId, result);
+            JsonObject result = new JsonObject();
+            result.addProperty("following", false);
+            result.addProperty("followerCount", followDao.getFollowerIds(targetId).size());
+            return Response.ok(requestId, result);
+        } catch (SQLException e) {
+            return Response.error(requestId,StatusCode.SERVER_ERROR,"Database error: "+e.getMessage());
+        }
     }
 
     public Response getFollowers(String requestId, JsonElement payload) {
@@ -74,15 +90,18 @@ public class FollowController {
             return Response.error(requestId, StatusCode.UNAUTHORIZED, "Invalid or expired session.");
         }
 
-        int targetId = body.has("userId") && !body.get("userId").isJsonNull()
-                ? body.get("userId").getAsInt() : requester.getId();
-
-        List<User> followers = new ArrayList<>();
-        for (Integer id : store.getFollowerIds(targetId)) {
-            User u = store.getUserById(id);
-            if (u != null) followers.add(u);
+        try {
+            int targetId = body.has("userId") && !body.get("userId").isJsonNull()
+                    ? body.get("userId").getAsInt() : requester.getId();
+            List<User> followers = new ArrayList<>();
+            for (Integer id : followDao.getFollowerIds(targetId)) {
+                User u = userDao.getUserById(id);
+                if (u != null) followers.add(u);
+            }
+            return Response.ok(requestId, gson.toJsonTree(followers));
+        } catch (SQLException e) {
+            return Response.error(requestId,StatusCode.SERVER_ERROR,"Database error: "+e.getMessage());
         }
-        return Response.ok(requestId, gson.toJsonTree(followers));
     }
 
     public Response getFollowing(String requestId, JsonElement payload) {
@@ -92,14 +111,17 @@ public class FollowController {
             return Response.error(requestId, StatusCode.UNAUTHORIZED, "Invalid or expired session.");
         }
 
-        int targetId = body.has("userId") && !body.get("userId").isJsonNull()
-                ? body.get("userId").getAsInt() : requester.getId();
-
-        List<User> following = new ArrayList<>();
-        for (Integer id : store.getFollowingIds(targetId)) {
-            User u = store.getUserById(id);
-            if (u != null) following.add(u);
+        try {
+            int targetId = body.has("userId") && !body.get("userId").isJsonNull()
+                    ? body.get("userId").getAsInt() : requester.getId();
+            List<User> following = new ArrayList<>();
+            for (Integer id : followDao.getFollowingIds(targetId)) {
+                User u = userDao.getUserById(id);
+                if (u != null) following.add(u);
+            }
+            return Response.ok(requestId, gson.toJsonTree(following));
+        } catch (SQLException e) {
+            return Response.error(requestId,StatusCode.SERVER_ERROR,"Database error: "+e.getMessage());
         }
-        return Response.ok(requestId, gson.toJsonTree(following));
     }
 }

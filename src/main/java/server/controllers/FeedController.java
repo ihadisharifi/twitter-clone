@@ -15,7 +15,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class FeedController {
-    
+
     private final TweetDao tweetDao = new TweetDao();
     private final FollowDao followDao = new FollowDao();
     private final LikeDao likeDao = new LikeDao();
