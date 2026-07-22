@@ -3,15 +3,21 @@ package server.controllers;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import server.database.TempDataStore;
+import server.database.dao.FollowDao;
+import server.database.dao.LikeDao;
+import server.database.dao.TweetDao;
 import shared.models.Tweet;
 import shared.models.User;
 import shared.protocol.Response;
 import shared.protocol.StatusCode;
 
+import java.sql.SQLException;
+
 public class LikeController {
 
-    private final TempDataStore store = TempDataStore.get();
+    private final TweetDao tweetDao = new TweetDao();
+    private final FollowDao followDao = new FollowDao();
+    private final LikeDao likeDao = new LikeDao();
     private final Gson gson = new Gson();
     private final AuthController authController;
 
@@ -29,18 +35,23 @@ public class LikeController {
             return Response.error(requestId, StatusCode.BAD_REQUEST, "tweetId is required.");
         }
 
-        int tweetId = body.get("tweetId").getAsInt();
-        Tweet tweet = store.getTweet(tweetId);
-        if (tweet == null) {
-            return Response.error(requestId, StatusCode.NOT_FOUND, "Tweet not found.");
-        }
+        try {
 
-        store.likeTweet(requester.getId(), tweetId);
-        
-        JsonObject result = new JsonObject();
-        result.addProperty("liked", true);
-        result.addProperty("likesCount", store.getLikeCount(tweetId));
-        return Response.ok(requestId, result);
+            int tweetId = body.get("tweetId").getAsInt();
+            Tweet tweet = tweetDao.getTweet(tweetId);
+            if (tweet == null) {
+                return Response.error(requestId, StatusCode.NOT_FOUND, "Tweet not found.");
+            }
+
+            likeDao.likeTweet(requester.getId(), tweetId);
+
+            JsonObject result = new JsonObject();
+            result.addProperty("liked", true);
+            result.addProperty("likesCount", likeDao.getLikeCount(tweetId));
+            return Response.ok(requestId, result);
+        } catch (SQLException e) {
+            return Response.error(requestId,StatusCode.SERVER_ERROR,"Database error: "+e.getMessage());
+        }
     }
 
     public Response unlikeTweet(String requestId, JsonElement payload) {
@@ -53,12 +64,17 @@ public class LikeController {
             return Response.error(requestId, StatusCode.BAD_REQUEST, "tweetId is required.");
         }
 
-        int tweetId = body.get("tweetId").getAsInt();
-        store.unlikeTweet(requester.getId(), tweetId);
+        try {
 
-        JsonObject result = new JsonObject();
-        result.addProperty("liked", false);
-        result.addProperty("likesCount", store.getLikeCount(tweetId));
-        return Response.ok(requestId, result);
+            int tweetId = body.get("tweetId").getAsInt();
+            likeDao.unlikeTweet(requester.getId(), tweetId);
+
+            JsonObject result = new JsonObject();
+            result.addProperty("liked", false);
+            result.addProperty("likesCount", likeDao.getLikeCount(tweetId));
+            return Response.ok(requestId, result);
+        } catch (Exception e) {
+            return Response.error(requestId, StatusCode.SERVER_ERROR,"Database error: "+e.getMessage());
+        }
     }
 }

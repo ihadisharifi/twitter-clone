@@ -3,7 +3,6 @@ package server.controllers;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import server.database.TempDataStore;
 import server.database.dao.FollowDao;
 import server.database.dao.TweetDao;
 import server.database.dao.UserDao;
@@ -17,7 +16,6 @@ import java.util.List;
 
 public class FollowController {
 
-//    private final TempDataStore store = TempDataStore.get();
     private final UserDao userDao = new UserDao();
     private final TweetDao tweetDao = new TweetDao();
     private final FollowDao followDao = new FollowDao();
