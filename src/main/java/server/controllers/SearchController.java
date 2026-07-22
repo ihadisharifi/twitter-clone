@@ -3,7 +3,9 @@ package server.controllers;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import server.database.TempDataStore;
+import server.database.dao.HashtagDao;
+import server.database.dao.TweetDao;
+import server.database.dao.UserDao;
 import shared.models.Tweet;
 import shared.models.User;
 import shared.protocol.Response;
@@ -13,7 +15,9 @@ import java.util.List;
 
 public class SearchController {
 
-    private final TempDataStore store = TempDataStore.get();
+    private final UserDao userDao = new UserDao();
+    private final TweetDao tweetDao = new TweetDao();
+    private final HashtagDao hashtagDao = new HashtagDao();
     private final Gson gson = new Gson();
     private final AuthController authController;
 
@@ -31,8 +35,13 @@ public class SearchController {
         if (query == null || query.trim().isEmpty()) {
             return Response.error(requestId, StatusCode.BAD_REQUEST, "query is required.");
         }
-        List<User> results = store.searchUsersByQuery(query.trim());
-        return Response.ok(requestId, gson.toJsonTree(results));
+
+        try {
+            List<User> results = userDao.searchUsersByQuery(query.trim());
+            return Response.ok(requestId, gson.toJsonTree(results));
+        } catch (Exception e) {
+            return Response.error(requestId, StatusCode.SERVER_ERROR,"Database error: "+e.getMessage());
+        }
     }
 
     public Response searchTweets(String requestId, JsonElement payload) {
@@ -45,8 +54,13 @@ public class SearchController {
         if (query == null || query.trim().isEmpty()) {
             return Response.error(requestId, StatusCode.BAD_REQUEST, "query is required.");
         }
-        List<Tweet> results = store.searchTweetsByKeyword(query.trim());
-        return Response.ok(requestId, gson.toJsonTree(results));
+
+        try {
+            List<Tweet> results = tweetDao.searchTweetsByKeyword(query.trim());
+            return Response.ok(requestId, gson.toJsonTree(results));
+        } catch (Exception e) {
+            return Response.error(requestId, StatusCode.SERVER_ERROR,"Database error: "+e.getMessage());
+        }
     }
 
     public Response searchHashtag(String requestId, JsonElement payload) {
@@ -59,9 +73,14 @@ public class SearchController {
         if (tag == null || tag.trim().isEmpty()) {
             return Response.error(requestId, StatusCode.BAD_REQUEST, "tag is required.");
         }
-        String normalized = tag.startsWith("#") ? tag.substring(1) : tag;
-        List<Tweet> results = store.getTweetsByHashtag(normalized.trim());
-        return Response.ok(requestId, gson.toJsonTree(results));
+
+        try {
+            String normalized = tag.startsWith("#") ? tag.substring(1) : tag;
+            List<Tweet> results = hashtagDao.getTweetsByHashtag(normalized.trim());
+            return Response.ok(requestId, gson.toJsonTree(results));
+        } catch (Exception e) {
+            return Response.error(requestId, StatusCode.SERVER_ERROR,"Database error: "+e.getMessage());
+        }
     }
 
     private static String getString(JsonObject obj, String key) {
