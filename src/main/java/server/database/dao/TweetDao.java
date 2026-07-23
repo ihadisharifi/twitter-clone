@@ -83,6 +83,19 @@ public class TweetDao {
         }
     }
 
+    public int getTweetCountByAuthor(int authorId) throws SQLException {
+        String sql = "SELECT COUNT(*) AS count FROM tweets WHERE author_id = ?";
+        try (Connection conn = DatabaseConnection.get();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setInt(1, authorId);
+            try (ResultSet rs = ps.executeQuery()) {
+                rs.next();
+                return rs.getInt("count");
+            }
+        }
+    }
+
     private List<Tweet> mapList(PreparedStatement ps) throws SQLException {
         List<Tweet> results = new ArrayList<>();
         try (ResultSet rs = ps.executeQuery()) {
