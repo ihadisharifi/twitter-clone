@@ -80,4 +80,30 @@ public class FollowDao {
             return ids;
         }
     }
+
+    public int getFollowerCount(int userId) throws SQLException {
+        String sql = "SELECT COUNT(*) AS count FROM follows WHERE following_id = ?";
+        try (Connection conn = DatabaseConnection.get();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setInt(1, userId);
+            try (ResultSet rs = ps.executeQuery()) {
+                rs.next();
+                return rs.getInt("count");
+            }
+        }
+    }
+
+    public int getFollowingCount(int userId) throws SQLException {
+        String sql = "SELECT COUNT(*) AS count FROM follows WHERE follower_id = ?";
+        try (Connection conn = DatabaseConnection.get();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setInt(1, userId);
+            try (ResultSet rs = ps.executeQuery()) {
+                rs.next();
+                return rs.getInt("count");
+            }
+        }
+    }
 }
