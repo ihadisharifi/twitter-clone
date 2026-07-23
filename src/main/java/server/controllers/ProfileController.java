@@ -45,7 +45,7 @@ public class ProfileController {
             result.addProperty("tweetsCount", tweetDao.getTweetCountByAuthor(target.getId()));
             result.addProperty("followersCount", followDao.getFollowerCount(target.getId()));
             result.addProperty("followingCount", followDao.getFollowingCount(target.getId()));
-            return Response.ok(requestId, gson.toJsonTree(target));
+            return Response.ok(requestId, gson.toJsonTree(result));
         } catch (SQLException e) {
             return Response.error(requestId, StatusCode.SERVER_ERROR,"Database error: "+e.getMessage());
         }
