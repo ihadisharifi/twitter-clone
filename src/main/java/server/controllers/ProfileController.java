@@ -8,6 +8,8 @@ import shared.models.User;
 import shared.protocol.Response;
 import shared.protocol.StatusCode;
 
+import java.sql.SQLException;
+
 public class ProfileController {
 
     private final UserDao userDao = new UserDao();
@@ -46,11 +48,17 @@ public class ProfileController {
             return Response.error(requestId, StatusCode.UNAUTHORIZED, "Invalid or expired session.");
         }
 
-        if (body.has("displayName")) requester.setDisplayName(body.get("displayName").getAsString());
-        if (body.has("bio")) requester.setBio(body.get("bio").getAsString());
-        if (body.has("avatarUrl")) requester.setAvatarUrl(body.get("avatarUrl").getAsString());
-        if (body.has("bannerUrl")) requester.setBannerUrl(body.get("bannerUrl").getAsString());
-
-        return Response.ok(requestId, gson.toJsonTree(requester));
+        try {
+            User updated = userDao.updateProfile(
+                    requester.getId(),
+                    body.has("displayName") ? body.get("displayName").getAsString() : requester.getDisplayName(),
+                    body.has("bio") ? body.get("bio").getAsString() : requester.getBio(),
+                    body.has("avatarUrl") ? body.get("avatarUrl").getAsString() : requester.getAvatarUrl(),
+                    body.has("bannerUrl") ? body.get("bannerUrl").getAsString() : requester.getBannerUrl()
+            );
+            return Response.ok(requestId, gson.toJsonTree(updated));
+        } catch (SQLException e) {
+            return Response.error(requestId, StatusCode.SERVER_ERROR,"Database error: "+e.getMessage());
+        }
     }
 }
