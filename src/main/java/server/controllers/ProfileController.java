@@ -3,6 +3,8 @@ package server.controllers;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import server.database.dao.FollowDao;
+import server.database.dao.TweetDao;
 import server.database.dao.UserDao;
 import shared.models.User;
 import shared.protocol.Response;
@@ -13,6 +15,8 @@ import java.sql.SQLException;
 public class ProfileController {
 
     private final UserDao userDao = new UserDao();
+    private final TweetDao tweetDao = new TweetDao();
+    private final FollowDao followDao = new FollowDao();
     private final Gson gson = new Gson();
     private final AuthController authController;
 
@@ -35,8 +39,14 @@ public class ProfileController {
                     return Response.error(requestId, StatusCode.NOT_FOUND, "User not found.");
                 }
             }
+
+            JsonObject result = new JsonObject();
+            result.add("user", gson.toJsonTree(target));
+            result.addProperty("tweetsCount", tweetDao.getTweetCountByAuthor(target.getId()));
+            result.addProperty("followersCount", followDao.getFollowerCount(target.getId()));
+            result.addProperty("followingCount", followDao.getFollowingCount(target.getId()));
             return Response.ok(requestId, gson.toJsonTree(target));
-        } catch (Exception e) {
+        } catch (SQLException e) {
             return Response.error(requestId, StatusCode.SERVER_ERROR,"Database error: "+e.getMessage());
         }
     }
