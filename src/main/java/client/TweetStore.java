@@ -251,6 +251,24 @@ public class TweetStore {
         return Collections.unmodifiableList(result);
     }
 
+    public synchronized List<StoredTweet> searchTweets(String query) {
+        if (query == null || query.isBlank()) {
+            return List.of();
+        }
+        String q = query.trim().toLowerCase();
+        List<StoredTweet> result = new ArrayList<>();
+        for (StoredTweet tweet : tweets) {
+            if (!tweet.isReply() && (
+                    tweet.getContent().toLowerCase().contains(q) ||
+                    tweet.getAuthorUsername().toLowerCase().contains(q) ||
+                    tweet.getAuthorDisplayName().toLowerCase().contains(q)
+            )) {
+                result.add(tweet);
+            }
+        }
+        return Collections.unmodifiableList(result);
+    }
+
     /** Alias for timeline roots; prefer {@link #getTimelineTweets()}. */
     public synchronized List<StoredTweet> getAllTweets() {
         return getTimelineTweets();

@@ -216,6 +216,17 @@ public class ProfileController {
     }
 
     @FXML
+    private void handleGoToSearch() {
+        NavigationManager.switchScene("/views/Search.fxml");
+    }
+
+    @FXML
+    private void handleCreatePost() {
+        FeedController.setShouldFocusComposer(true);
+        NavigationManager.switchScene("/views/Feed.fxml");
+    }
+
+    @FXML
     private void handleGoToProfile() {
         // Already on Profile; close drawer if open
         SideDrawerHelper.close(drawerOverlay, drawerPanel);

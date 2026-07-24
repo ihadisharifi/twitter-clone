@@ -44,6 +44,17 @@ public class BookmarksController {
     }
 
     @FXML
+    private void handleGoToSearch() {
+        NavigationManager.switchScene("/views/Search.fxml");
+    }
+
+    @FXML
+    private void handleCreatePost() {
+        FeedController.setShouldFocusComposer(true);
+        NavigationManager.switchScene("/views/Feed.fxml");
+    }
+
+    @FXML
     private void handleGoToProfile() {
         NavigationManager.switchScene("/views/Profile.fxml");
     }

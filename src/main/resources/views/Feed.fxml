@@ -77,6 +77,16 @@
                                 <Font size="20.0" />
                             </font>
                         </Button>
+                        <Button maxWidth="Infinity" minHeight="56.0" onAction="#handleGoToSearch" styleClass="bottom-nav-item" text="🔍" HBox.hgrow="ALWAYS">
+                            <font>
+                                <Font size="20.0" />
+                            </font>
+                        </Button>
+                        <Button maxWidth="Infinity" minHeight="56.0" onAction="#handleCreatePost" styleClass="bottom-nav-item" text="➕" HBox.hgrow="ALWAYS">
+                            <font>
+                                <Font size="20.0" />
+                            </font>
+                        </Button>
                         <Button maxWidth="Infinity" minHeight="56.0" onAction="#handleGoToProfile" styleClass="bottom-nav-item" text="👤" HBox.hgrow="ALWAYS">
                             <font>
                                 <Font size="20.0" />

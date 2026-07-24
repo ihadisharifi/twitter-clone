@@ -66,12 +66,25 @@ public class FeedController {
     /** Labels that need Twitter-style relative times refreshed while the feed is open. */
     private final List<TimestampLabel> liveTimestamps = new ArrayList<>();
     private Timeline timeRefreshTimeline;
+    private static boolean shouldFocusComposer = false;
+
+    public static void setShouldFocusComposer(boolean focus) {
+        shouldFocusComposer = focus;
+    }
 
     @FXML
     public void initialize() {
         SideDrawerHelper.populateUserHeader(drawerDisplayName, drawerUsername);
         loadTimeline();
         startTimestampRefresh();
+        if (shouldFocusComposer) {
+            shouldFocusComposer = false;
+            javafx.application.Platform.runLater(() -> {
+                if (tweetTextArea != null) {
+                    tweetTextArea.requestFocus();
+                }
+            });
+        }
     }
 
     @FXML
@@ -443,6 +456,18 @@ public class FeedController {
     private void handleGoToHome() {
         // Already on Home; close drawer if it was open
         SideDrawerHelper.close(drawerOverlay, drawerPanel);
+    }
+
+    @FXML
+    private void handleGoToSearch() {
+        NavigationManager.switchScene("/views/Search.fxml");
+    }
+
+    @FXML
+    private void handleCreatePost() {
+        if (tweetTextArea != null) {
+            tweetTextArea.requestFocus();
+        }
     }
 
     @FXML
