@@ -1,6 +1,7 @@
 package client.controllers;
 
 import client.NavigationManager;
+import client.SideDrawerHelper;
 import client.TweetStore;
 import client.TweetStore.StoredTweet;
 import client.TweetTimeFormatter;
@@ -27,9 +28,6 @@ import java.util.List;
 
 public class ProfileController {
     @FXML
-    private Label headerNameLabel;
-
-    @FXML
     private Label nameLabel;
 
     @FXML
@@ -41,11 +39,24 @@ public class ProfileController {
     @FXML
     private Label bioLabel;
 
+    @FXML
+    private HBox drawerOverlay;
+
+    @FXML
+    private VBox drawerPanel;
+
+    @FXML
+    private Label drawerDisplayName;
+
+    @FXML
+    private Label drawerUsername;
+
     private final List<TimestampLabel> liveTimestamps = new ArrayList<>();
     private Timeline timeRefreshTimeline;
 
     @FXML
     public void initialize() {
+        SideDrawerHelper.populateUserHeader(drawerDisplayName, drawerUsername);
         refreshProfileData();
         startTimestampRefresh();
     }
@@ -190,8 +201,29 @@ public class ProfileController {
     }
 
     @FXML
+    private void handleOpenDrawer() {
+        SideDrawerHelper.open(drawerOverlay, drawerPanel);
+    }
+
+    @FXML
+    private void handleCloseDrawer() {
+        SideDrawerHelper.close(drawerOverlay, drawerPanel);
+    }
+
+    @FXML
     private void handleGoToHome() {
         NavigationManager.switchScene("/views/Feed.fxml");
+    }
+
+    @FXML
+    private void handleGoToProfile() {
+        // Already on Profile; close drawer if open
+        SideDrawerHelper.close(drawerOverlay, drawerPanel);
+    }
+
+    @FXML
+    private void handleGoToBookmarks() {
+        NavigationManager.switchScene("/views/Bookmarks.fxml");
     }
 
     @FXML
@@ -210,7 +242,6 @@ public class ProfileController {
             String activeBio = currentUser.getBio();
 
             nameLabel.setText(activeDisplayName != null ? activeDisplayName : "Active User");
-            headerNameLabel.setText(activeDisplayName != null ? activeDisplayName : "Active User");
             usernameLabel.setText(activeUsername != null ? "@" + activeUsername : "@user");
 
             if (bioLabel != null) {
@@ -219,7 +250,6 @@ public class ProfileController {
         }
         else {
             nameLabel.setText("Active User");
-            headerNameLabel.setText("Active User");
             usernameLabel.setText("@user");
         }
 
