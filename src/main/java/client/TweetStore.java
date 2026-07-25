@@ -58,7 +58,11 @@ public class TweetStore {
 
     /** Original post (not a retweet card). */
     public synchronized StoredTweet addTweet(String content, String username, String displayName) {
-        return addTweetInternal(content, username, displayName, Instant.now(), null, null, null, null);
+        return addTweetInternal(content, username, displayName, Instant.now(), null, null, null, null, null);
+    }
+
+    public synchronized StoredTweet addTweet(String content, String username, String displayName, String mediaPath) {
+        return addTweetInternal(content, username, displayName, Instant.now(), null, null, null, null, mediaPath);
     }
 
     /**
@@ -122,7 +126,8 @@ public class TweetStore {
                 null,
                 original.getId(),
                 original.getAuthorUsername(),
-                original.getAuthorDisplayName()
+                original.getAuthorDisplayName(),
+                original.getMediaPath()
         );
         original.incrementRetweets();
         original.setRetweetedByCurrentUser(true);
@@ -345,6 +350,20 @@ public class TweetStore {
             String originalAuthorUsername,
             String originalAuthorDisplayName
     ) {
+        return addTweetInternal(content, username, displayName, createdAt, replyToId, retweetOfId, originalAuthorUsername, originalAuthorDisplayName, null);
+    }
+
+    private StoredTweet addTweetInternal(
+            String content,
+            String username,
+            String displayName,
+            Instant createdAt,
+            Integer replyToId,
+            Integer retweetOfId,
+            String originalAuthorUsername,
+            String originalAuthorDisplayName,
+            String mediaPath
+    ) {
         StoredTweet tweet = new StoredTweet(
                 nextId++,
                 content,
@@ -354,7 +373,8 @@ public class TweetStore {
                 replyToId,
                 retweetOfId,
                 originalAuthorUsername,
-                originalAuthorDisplayName
+                originalAuthorDisplayName,
+                mediaPath
         );
         tweets.add(0, tweet);
         return tweet;
@@ -381,6 +401,7 @@ public class TweetStore {
         private boolean likedByCurrentUser;
         private boolean retweetedByCurrentUser;
         private boolean isBookmarked;
+        private String mediaPath;
 
         public StoredTweet(
                 int id,
@@ -393,6 +414,21 @@ public class TweetStore {
                 String originalAuthorUsername,
                 String originalAuthorDisplayName
         ) {
+            this(id, content, authorUsername, authorDisplayName, createdAt, replyToId, retweetOfId, originalAuthorUsername, originalAuthorDisplayName, null);
+        }
+
+        public StoredTweet(
+                int id,
+                String content,
+                String authorUsername,
+                String authorDisplayName,
+                Instant createdAt,
+                Integer replyToId,
+                Integer retweetOfId,
+                String originalAuthorUsername,
+                String originalAuthorDisplayName,
+                String mediaPath
+        ) {
             this.id = id;
             this.content = content;
             this.authorUsername = authorUsername;
@@ -402,6 +438,7 @@ public class TweetStore {
             this.retweetOfId = retweetOfId;
             this.originalAuthorUsername = originalAuthorUsername;
             this.originalAuthorDisplayName = originalAuthorDisplayName;
+            this.mediaPath = mediaPath;
         }
 
         public int getId() { return id; }
@@ -430,6 +467,9 @@ public class TweetStore {
         public boolean isLikedByCurrentUser() { return likedByCurrentUser; }
         public boolean isRetweetedByCurrentUser() { return retweetedByCurrentUser; }
         public boolean isBookmarked() { return isBookmarked; }
+
+        public String getMediaPath() { return mediaPath; }
+        public void setMediaPath(String mediaPath) { this.mediaPath = mediaPath; }
 
         public void setBookmarked(boolean bookmarked) {
             this.isBookmarked = bookmarked;

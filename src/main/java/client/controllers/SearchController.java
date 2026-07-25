@@ -15,6 +15,8 @@ import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.scene.control.Tooltip;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
@@ -219,7 +221,9 @@ public class SearchController {
 
         actionToolbar.getChildren().addAll(retweetButton, likeButton, bookmarkButton);
 
-        contentStack.getChildren().addAll(headerRow, bodyText, actionToolbar);
+        contentStack.getChildren().addAll(headerRow, bodyText);
+        renderTweetMediaIfPresent(contentStack, tweet);
+        contentStack.getChildren().add(actionToolbar);
         tweetRow.getChildren().addAll(avatarBox, contentStack);
         card.getChildren().add(tweetRow);
 
@@ -244,6 +248,40 @@ public class SearchController {
     private void applyBookmarkStyle(Button button, StoredTweet tweet) {
         button.setText("🔖");
         button.setStyle(tweet.isBookmarked() ? STYLE_BOOKMARK_ACTIVE : STYLE_ACTION_IDLE);
+    }
+
+    private void renderTweetMediaIfPresent(VBox contentStack, StoredTweet tweet) {
+        String mediaPath = tweet.getMediaPath();
+        if (mediaPath != null && !mediaPath.isBlank()) {
+            try {
+                String uriString;
+                if (mediaPath.startsWith("file:") || mediaPath.startsWith("http:") || mediaPath.startsWith("https:")) {
+                    uriString = mediaPath;
+                } else {
+                    java.io.File file = new java.io.File(mediaPath);
+                    uriString = file.exists() ? file.toURI().toString() : null;
+                }
+
+                if (uriString != null) {
+                    Image mediaImg = new Image(uriString, 420, 260, true, true);
+                    if (!mediaImg.isError()) {
+                        ImageView mediaView = new ImageView(mediaImg);
+                        mediaView.setFitWidth(380);
+                        mediaView.setFitHeight(220);
+                        mediaView.setPreserveRatio(true);
+
+                        javafx.scene.shape.Rectangle clip = new javafx.scene.shape.Rectangle();
+                        clip.setArcWidth(16);
+                        clip.setArcHeight(16);
+                        clip.widthProperty().bind(mediaView.layoutBoundsProperty().map(b -> b.getWidth()));
+                        clip.heightProperty().bind(mediaView.layoutBoundsProperty().map(b -> b.getHeight()));
+                        mediaView.setClip(clip);
+
+                        contentStack.getChildren().add(mediaView);
+                    }
+                }
+            } catch (Exception ignored) {}
+        }
     }
 
     private String currentUsername() {
