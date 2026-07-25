@@ -12,6 +12,7 @@ import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.fxml.FXML;
 import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextArea;
@@ -20,13 +21,17 @@ import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
+import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
+import javafx.stage.FileChooser;
+import javafx.stage.Stage;
 import javafx.util.Duration;
 
+import java.io.File;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -300,27 +305,85 @@ public class FeedController {
         replyInput.setStyle(STYLE_COMPOSE_AREA);
         replyInput.setMaxWidth(Double.MAX_VALUE);
 
-        HBox replyActions = new HBox(8);
-        replyActions.setStyle("-fx-alignment: center-right;");
+        // Reply Media Attachment Preview Container
+        StackPane replyMediaPreviewContainer = new StackPane();
+        replyMediaPreviewContainer.setAlignment(Pos.TOP_RIGHT);
+        replyMediaPreviewContainer.setMaxHeight(160);
+        replyMediaPreviewContainer.setMaxWidth(340);
+        replyMediaPreviewContainer.setVisible(false);
+        replyMediaPreviewContainer.setManaged(false);
+        replyMediaPreviewContainer.setStyle("-fx-background-color: #16181c; -fx-background-radius: 10; -fx-border-color: #333333; -fx-border-radius: 10;");
+
+        VBox replyMediaPreviewBox = new VBox();
+        replyMediaPreviewBox.setAlignment(Pos.CENTER);
+
+        final String[] replySelectedMediaPath = new String[1];
+
+        Button removeReplyMediaBtn = new Button("✕");
+        removeReplyMediaBtn.setStyle("-fx-background-color: rgba(15, 20, 25, 0.75); -fx-text-fill: white; -fx-background-radius: 50%; -fx-min-width: 24px; -fx-min-height: 24px; -fx-font-size: 11px; -fx-cursor: hand;");
+        StackPane.setMargin(removeReplyMediaBtn, new Insets(6, 6, 0, 0));
+        removeReplyMediaBtn.setOnAction(e -> {
+            replySelectedMediaPath[0] = null;
+            replyMediaPreviewBox.getChildren().clear();
+            replyMediaPreviewContainer.setVisible(false);
+            replyMediaPreviewContainer.setManaged(false);
+        });
+
+        replyMediaPreviewContainer.getChildren().addAll(replyMediaPreviewBox, removeReplyMediaBtn);
+
+        HBox replyActions = new HBox(12);
+        replyActions.setAlignment(Pos.CENTER_RIGHT);
+
+        Button attachMediaBtn = new Button("🖼️");
+        attachMediaBtn.setStyle("-fx-background-color: transparent; -fx-text-fill: #1d9bf0; -fx-font-size: 16px; -fx-padding: 4; -fx-cursor: hand;");
+        attachMediaBtn.setOnAction(e -> {
+            FileChooser fileChooser = new FileChooser();
+            fileChooser.setTitle("Attach Media to Reply");
+            fileChooser.getExtensionFilters().addAll(
+                    new FileChooser.ExtensionFilter("Media Files (*.png, *.jpg, *.jpeg, *.gif, *.mp4, *.m4v)", "*.png", "*.jpg", "*.jpeg", "*.gif", "*.mp4", "*.m4v"),
+                    new FileChooser.ExtensionFilter("Image Files", "*.png", "*.jpg", "*.jpeg", "*.gif"),
+                    new FileChooser.ExtensionFilter("Video Files", "*.mp4", "*.m4v")
+            );
+            Stage stage = (Stage) replyInput.getScene().getWindow();
+            File file = fileChooser.showOpenDialog(stage);
+            if (file != null) {
+                replySelectedMediaPath[0] = file.toURI().toString();
+                javafx.scene.Node previewNode = client.TweetMediaHelper.createMediaNode(replySelectedMediaPath[0], 340, 150);
+                if (previewNode != null) {
+                    replyMediaPreviewBox.getChildren().clear();
+                    replyMediaPreviewBox.getChildren().add(previewNode);
+                    replyMediaPreviewContainer.setVisible(true);
+                    replyMediaPreviewContainer.setManaged(true);
+                } else {
+                    replySelectedMediaPath[0] = null;
+                }
+            }
+        });
+
+        javafx.scene.layout.Region spacer = new javafx.scene.layout.Region();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
+
         Button sendReply = new Button("Reply");
         sendReply.setStyle(STYLE_POST_BTN);
         sendReply.setOnAction(e -> {
             String text = replyInput.getText() != null ? replyInput.getText().trim() : "";
-            if (text.isEmpty()) {
+            if (text.isEmpty() && replySelectedMediaPath[0] == null) {
                 return;
             }
             TweetStore.getInstance().addReply(
                     parent.getId(),
                     text,
                     currentUsername(),
-                    currentDisplayName()
+                    currentDisplayName(),
+                    replySelectedMediaPath[0]
             );
             applyReplyStyle(replyButton, parent);
             rebuildReplyPanel(replyPanel, parent, replyButton);
         });
-        replyActions.getChildren().add(sendReply);
 
-        replyPanel.getChildren().addAll(replyInput, replyActions);
+        replyActions.getChildren().addAll(attachMediaBtn, spacer, sendReply);
+
+        replyPanel.getChildren().addAll(replyInput, replyMediaPreviewContainer, replyActions);
     }
 
     private VBox buildNestedReplyNode(StoredTweet reply) {
@@ -356,6 +419,13 @@ public class FeedController {
         body.setMaxWidth(400);
 
         node.getChildren().addAll(header, body);
+
+        if (reply.getMediaPath() != null && !reply.getMediaPath().isBlank()) {
+            javafx.scene.Node mediaNode = client.TweetMediaHelper.createMediaNode(reply.getMediaPath(), 340, 180);
+            if (mediaNode != null) {
+                node.getChildren().add(mediaNode);
+            }
+        }
         return node;
     }
 

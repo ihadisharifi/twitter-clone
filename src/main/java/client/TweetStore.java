@@ -70,21 +70,29 @@ public class TweetStore {
      * Returns null if the parent does not exist.
      */
     public synchronized StoredTweet addReply(int parentId, String content, String username, String displayName) {
+        return addReply(parentId, content, username, displayName, null);
+    }
+
+    public synchronized StoredTweet addReply(int parentId, String content, String username, String displayName, String mediaPath) {
         StoredTweet parent = findById(parentId);
-        if (parent == null || content == null || content.isBlank()) {
+        if (parent == null) {
+            return null;
+        }
+        if ((content == null || content.isBlank()) && (mediaPath == null || mediaPath.isBlank())) {
             return null;
         }
         // Always attach replies to the original post (not to a retweet card)
         StoredTweet root = resolveOriginal(parent);
         StoredTweet reply = addTweetInternal(
-                content.trim(),
+                content != null ? content.trim() : "",
                 username != null ? username : "user",
                 displayName != null ? displayName : "User",
                 Instant.now(),
                 root.getId(),
                 null,
                 root.getAuthorUsername(),
-                root.getAuthorDisplayName()
+                root.getAuthorDisplayName(),
+                mediaPath
         );
         root.incrementReplies();
         return reply;
