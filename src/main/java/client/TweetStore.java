@@ -58,7 +58,11 @@ public class TweetStore {
 
     /** Original post (not a retweet card). */
     public synchronized StoredTweet addTweet(String content, String username, String displayName) {
-        return addTweetInternal(content, username, displayName, Instant.now(), null, null, null, null);
+        return addTweetInternal(content, username, displayName, Instant.now(), null, null, null, null, null);
+    }
+
+    public synchronized StoredTweet addTweet(String content, String username, String displayName, String mediaPath) {
+        return addTweetInternal(content, username, displayName, Instant.now(), null, null, null, null, mediaPath);
     }
 
     /**
@@ -66,21 +70,29 @@ public class TweetStore {
      * Returns null if the parent does not exist.
      */
     public synchronized StoredTweet addReply(int parentId, String content, String username, String displayName) {
+        return addReply(parentId, content, username, displayName, null);
+    }
+
+    public synchronized StoredTweet addReply(int parentId, String content, String username, String displayName, String mediaPath) {
         StoredTweet parent = findById(parentId);
-        if (parent == null || content == null || content.isBlank()) {
+        if (parent == null) {
+            return null;
+        }
+        if ((content == null || content.isBlank()) && (mediaPath == null || mediaPath.isBlank())) {
             return null;
         }
         // Always attach replies to the original post (not to a retweet card)
         StoredTweet root = resolveOriginal(parent);
         StoredTweet reply = addTweetInternal(
-                content.trim(),
+                content != null ? content.trim() : "",
                 username != null ? username : "user",
                 displayName != null ? displayName : "User",
                 Instant.now(),
                 root.getId(),
                 null,
                 root.getAuthorUsername(),
-                root.getAuthorDisplayName()
+                root.getAuthorDisplayName(),
+                mediaPath
         );
         root.incrementReplies();
         return reply;
@@ -122,7 +134,8 @@ public class TweetStore {
                 null,
                 original.getId(),
                 original.getAuthorUsername(),
-                original.getAuthorDisplayName()
+                original.getAuthorDisplayName(),
+                original.getMediaPath()
         );
         original.incrementRetweets();
         original.setRetweetedByCurrentUser(true);
@@ -137,6 +150,29 @@ public class TweetStore {
         // Likes apply to the original content for retweet cards
         StoredTweet target = resolveOriginal(tweet);
         return target.toggleLike();
+    }
+
+    public synchronized boolean toggleBookmark(String tweetId) {
+        if (tweetId == null) {
+            return false;
+        }
+        try {
+            int id = Integer.parseInt(tweetId.trim());
+            return toggleBookmark(id);
+        } catch (NumberFormatException e) {
+            return false;
+        }
+    }
+
+    public synchronized boolean toggleBookmark(int tweetId) {
+        StoredTweet tweet = findById(tweetId);
+        if (tweet == null) {
+            return false;
+        }
+        StoredTweet target = resolveOriginal(tweet);
+        boolean newState = !target.isBookmarked();
+        target.setBookmarked(newState);
+        return newState;
     }
 
     /**
@@ -251,6 +287,34 @@ public class TweetStore {
         return Collections.unmodifiableList(result);
     }
 
+    public synchronized List<StoredTweet> searchTweets(String query) {
+        if (query == null || query.isBlank()) {
+            return List.of();
+        }
+        String q = query.trim().toLowerCase();
+        List<StoredTweet> result = new ArrayList<>();
+        for (StoredTweet tweet : tweets) {
+            if (!tweet.isReply() && (
+                    tweet.getContent().toLowerCase().contains(q) ||
+                    tweet.getAuthorUsername().toLowerCase().contains(q) ||
+                    tweet.getAuthorDisplayName().toLowerCase().contains(q)
+            )) {
+                result.add(tweet);
+            }
+        }
+        return Collections.unmodifiableList(result);
+    }
+
+    public synchronized List<StoredTweet> getBookmarkedTweets() {
+        List<StoredTweet> result = new ArrayList<>();
+        for (StoredTweet tweet : tweets) {
+            if (tweet.isBookmarked()) {
+                result.add(tweet);
+            }
+        }
+        return Collections.unmodifiableList(result);
+    }
+
     /** Alias for timeline roots; prefer {@link #getTimelineTweets()}. */
     public synchronized List<StoredTweet> getAllTweets() {
         return getTimelineTweets();
@@ -294,6 +358,20 @@ public class TweetStore {
             String originalAuthorUsername,
             String originalAuthorDisplayName
     ) {
+        return addTweetInternal(content, username, displayName, createdAt, replyToId, retweetOfId, originalAuthorUsername, originalAuthorDisplayName, null);
+    }
+
+    private StoredTweet addTweetInternal(
+            String content,
+            String username,
+            String displayName,
+            Instant createdAt,
+            Integer replyToId,
+            Integer retweetOfId,
+            String originalAuthorUsername,
+            String originalAuthorDisplayName,
+            String mediaPath
+    ) {
         StoredTweet tweet = new StoredTweet(
                 nextId++,
                 content,
@@ -303,7 +381,8 @@ public class TweetStore {
                 replyToId,
                 retweetOfId,
                 originalAuthorUsername,
-                originalAuthorDisplayName
+                originalAuthorDisplayName,
+                mediaPath
         );
         tweets.add(0, tweet);
         return tweet;
@@ -329,6 +408,8 @@ public class TweetStore {
         private int retweets;
         private boolean likedByCurrentUser;
         private boolean retweetedByCurrentUser;
+        private boolean isBookmarked;
+        private String mediaPath;
 
         public StoredTweet(
                 int id,
@@ -341,6 +422,21 @@ public class TweetStore {
                 String originalAuthorUsername,
                 String originalAuthorDisplayName
         ) {
+            this(id, content, authorUsername, authorDisplayName, createdAt, replyToId, retweetOfId, originalAuthorUsername, originalAuthorDisplayName, null);
+        }
+
+        public StoredTweet(
+                int id,
+                String content,
+                String authorUsername,
+                String authorDisplayName,
+                Instant createdAt,
+                Integer replyToId,
+                Integer retweetOfId,
+                String originalAuthorUsername,
+                String originalAuthorDisplayName,
+                String mediaPath
+        ) {
             this.id = id;
             this.content = content;
             this.authorUsername = authorUsername;
@@ -350,6 +446,7 @@ public class TweetStore {
             this.retweetOfId = retweetOfId;
             this.originalAuthorUsername = originalAuthorUsername;
             this.originalAuthorDisplayName = originalAuthorDisplayName;
+            this.mediaPath = mediaPath;
         }
 
         public int getId() { return id; }
@@ -377,6 +474,14 @@ public class TweetStore {
 
         public boolean isLikedByCurrentUser() { return likedByCurrentUser; }
         public boolean isRetweetedByCurrentUser() { return retweetedByCurrentUser; }
+        public boolean isBookmarked() { return isBookmarked; }
+
+        public String getMediaPath() { return mediaPath; }
+        public void setMediaPath(String mediaPath) { this.mediaPath = mediaPath; }
+
+        public void setBookmarked(boolean bookmarked) {
+            this.isBookmarked = bookmarked;
+        }
 
         void setRetweetedByCurrentUser(boolean value) {
             this.retweetedByCurrentUser = value;

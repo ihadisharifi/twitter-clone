@@ -4,112 +4,238 @@
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.image.ImageView?>
 <?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.shape.Circle?>
 <?import javafx.scene.text.Font?>
 
-<HBox prefHeight="650.0" prefWidth="600.0" style="-fx-background-color: #000000;" stylesheets="@../styles/twitter.css" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="client.controllers.ProfileController">
+<StackPane prefHeight="650.0" prefWidth="600.0" styleClass="app-root" stylesheets="@../styles/twitter.css" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="client.controllers.ProfileController">
     <children>
 
-        <!-- Sidebar menu -->
-        <VBox prefWidth="180.0" spacing="10.0" style="-fx-border-color: #333333; -fx-border-width: 0 1 0 0; -fx-padding: 20 10 20 10;">
-            <children>
-                <!-- Home navigation button -->
-                <Label text="𝕏" textFill="WHITE">
-                    <font>
-                        <Font name="System Bold" size="28.0" />
-                    </font>
-                    <VBox.margin>
-                        <Insets bottom="20.0" left="10.0" />
-                    </VBox.margin>
-                </Label>
-                <!-- Home navigation button -->
-                <Button onAction="#handleGoToHome" text="🏠 Home" minHeight="40.0" maxWidth="Infinity" alignment="BASELINE_LEFT" style="-fx-background-color: transparent; -fx-text-fill: #ffffff; -fx-font-size: 16; -fx-cursor: hand;" />
-                <!-- Profile navigation button (active) -->
-                <Button text="👤 Profile" minHeight="40.0" maxWidth="Infinity" alignment="BASELINE_LEFT" style="-fx-background-color: transparent; -fx-text-fill: #ffffff; -fx-font-weight: bold; -fx-font-size: 16; -fx-cursor: hand;" />
-                <VBox VBox.vgrow="ALWAYS" />
-                <!-- Logout button -->
-                <Button onAction="#handleLogout" text="🚪 Log Out" minHeight="40.0" maxWidth="Infinity" alignment="BASELINE_LEFT" style="-fx-background-color: transparent; -fx-text-fill: #f4212e; -fx-font-weight: bold; -fx-font-size: 15; -fx-cursor: hand;" />
-            </children>
-        </VBox>
-
-        <!-- Main profile content area -->
-        <VBox HBox.hgrow="ALWAYS">
+        <!-- Main page (top bar + profile content + bottom nav) -->
+        <VBox styleClass="app-root">
             <children>
 
-                <HBox alignment="CENTER_LEFT" prefHeight="50.0" spacing="20.0" style="-fx-border-color: #333333; -fx-border-width: 0 0 1 0; -fx-padding: 0 0 0 15;">
+                <!-- Top bar: profile picture left, X logo center -->
+                <StackPane prefHeight="54.0" styleClass="top-bar">
                     <children>
-                        <Button onAction="#handleGoToHome" text="←" style="-fx-background-color: transparent; -fx-text-fill: white; -fx-font-size: 18; -fx-font-weight: bold; -fx-cursor: hand;" />
-                        <!-- Username + post count -->
-                        <VBox alignment="CENTER_LEFT">
+                        <HBox alignment="CENTER_LEFT" maxWidth="Infinity" StackPane.alignment="CENTER_LEFT">
+                            <padding>
+                                <Insets left="12.0" right="12.0" />
+                            </padding>
                             <children>
-                                <Label fx:id="headerNameLabel" text="Sample" textFill="WHITE"><font><Font name="System Bold" size="16.0" /></font></Label>
-                                <Label text="2 Posts" textFill="#71767b"><font><Font size="12.0" /></font></Label>
+                                <Button onAction="#handleOpenDrawer" styleClass="avatar-button">
+                                    <graphic>
+                                        <StackPane>
+                                            <children>
+                                                <Circle fill="#262626" radius="16.0" stroke="#333333" strokeWidth="1.0" />
+                                                <Label style="-fx-text-fill: #71767b; -fx-font-size: 14;" text="👤" />
+                                            </children>
+                                        </StackPane>
+                                    </graphic>
+                                </Button>
                             </children>
-                        </VBox>
+                        </HBox>
+                        <Label styleClass="x-logo" text="𝕏" StackPane.alignment="CENTER">
+                            <font>
+                                <Font name="System Bold" size="22.0" />
+                            </font>
+                        </Label>
                     </children>
-                </HBox>
+                </StackPane>
 
-                <!-- Scrollable profile content-->
+                <!-- Scrollable profile content -->
                 <ScrollPane fitToWidth="true" hbarPolicy="NEVER" style="-fx-background: #000000; -fx-background-color: #000000;" vbarPolicy="AS_NEEDED" VBox.vgrow="ALWAYS">
                     <content>
                         <VBox style="-fx-background-color: #000000;">
                             <children>
 
-                                <!-- Profile banner -->
-                                <VBox prefHeight="120.0" style="-fx-background-color: #333333;" />
+                                <!-- Profile banner with X-style back arrow and photo edit overlaid on it -->
+                                <StackPane fx:id="bannerContainer" onMouseClicked="#handleBannerClick" prefHeight="150.0" styleClass="profile-banner" style="-fx-cursor: hand;">
+                                    <children>
+                                        <Region fx:id="bannerPlaceholder" maxHeight="Infinity" maxWidth="Infinity" style="-fx-background-color: #333333;" />
+                                        <ImageView fx:id="bannerImageView" fitHeight="150.0" fitWidth="600.0" preserveRatio="false" visible="false" managed="false" />
+                                        <Button onAction="#handleGoToHome" styleClass="banner-back-button" text="←" StackPane.alignment="TOP_LEFT">
+                                            <StackPane.margin>
+                                                <Insets left="12.0" top="12.0" />
+                                            </StackPane.margin>
+                                        </Button>
+                                        <Button onAction="#handleBannerClick" style="-fx-background-color: rgba(0,0,0,0.55); -fx-text-fill: white; -fx-background-radius: 50%; -fx-min-width: 36px; -fx-min-height: 36px; -fx-font-size: 15px; -fx-cursor: hand;" text="📷" StackPane.alignment="CENTER" />
+                                    </children>
+                                </StackPane>
 
-                                <!-- Profile details section -->
+                                <!-- Profile details -->
                                 <VBox spacing="8.0" style="-fx-padding: 0 15 15 15;">
                                     <children>
-                                        <!-- Avatar -->
-                                        <HBox alignment="BOTTOM_LEFT" prefHeight="40.0">
+                                        <HBox alignment="BOTTOM_LEFT" prefHeight="45.0">
                                             <children>
-                                                <Circle radius="35.0" fill="#262626" stroke="#000000" strokeWidth="4.0">
-                                                    <HBox.margin><Insets top="-35.0" /></HBox.margin>
-                                                </Circle>
+                                                <StackPane onMouseClicked="#handleAvatarClick" style="-fx-cursor: hand;">
+                                                    <HBox.margin>
+                                                        <Insets top="-45.0" />
+                                                    </HBox.margin>
+                                                    <children>
+                                                        <!-- Default Circle placeholder -->
+                                                        <Circle fx:id="avatarPlaceholder" fill="#262626" radius="45.0" stroke="#000000" strokeWidth="4.0" />
+                                                        <Label fx:id="avatarPlaceholderIcon" style="-fx-text-fill: #71767b; -fx-font-size: 38px;" text="👤" />
+                                                        <!-- Custom ImageView clipped to circle -->
+                                                        <ImageView fx:id="avatarImageView" fitHeight="90.0" fitWidth="90.0" preserveRatio="false" visible="false" managed="false" />
+                                                        <!-- Camera badge -->
+                                                        <StackPane alignment="BOTTOM_RIGHT" prefHeight="90.0" prefWidth="90.0">
+                                                            <children>
+                                                                <Circle fill="#1d9bf0" radius="12.0" stroke="#000000" strokeWidth="2.0" />
+                                                                <Label style="-fx-text-fill: white; -fx-font-size: 12px;" text="📷" />
+                                                            </children>
+                                                        </StackPane>
+                                                    </children>
+                                                </StackPane>
                                             </children>
                                         </HBox>
 
-                                        <!-- Name + username -->
                                         <VBox spacing="1.0">
                                             <children>
-                                                <Label fx:id="nameLabel" text="Sample" textFill="WHITE"><font><Font name="System Bold" size="20.0" /></font></Label>
-                                                <Label fx:id="usernameLabel" text=" @developer" textFill="#71767b"><font><Font size="14.0" /></font></Label>
+                                                <Label fx:id="nameLabel" text="Sample" textFill="WHITE">
+                                                    <font>
+                                                        <Font name="System Bold" size="20.0" />
+                                                    </font>
+                                                </Label>
+                                                <Label fx:id="usernameLabel" text="@developer" textFill="#71767b">
+                                                    <font>
+                                                        <Font size="14.0" />
+                                                    </font>
+                                                </Label>
                                             </children>
                                         </VBox>
 
-                                        <!-- Bio -->
-                                        <Label fx:id="bioLabel" text="sample Bio!" textFill="WHITE" wrapText="true"><font><Font size="14.0" /></font></Label>
+                                        <Label fx:id="bioLabel" text="sample Bio!" textFill="WHITE" wrapText="true">
+                                            <font>
+                                                <Font size="14.0" />
+                                            </font>
+                                        </Label>
 
-                                        <!-- Following / Followers stats -->
                                         <HBox spacing="20.0" style="-fx-padding: 5 0 0 0;">
                                             <children>
-                                                <HBox spacing="4.0"><children><Label text="145" textFill="WHITE" style="-fx-font-weight: bold;"/><Label text="Following" textFill="#71767b"/></children></HBox>
-                                                <HBox spacing="4.0"><children><Label text="892" textFill="WHITE" style="-fx-font-weight: bold;"/><Label text="Followers" textFill="#71767b"/></children></HBox>
+                                                <HBox spacing="4.0">
+                                                    <children>
+                                                        <Label style="-fx-font-weight: bold;" text="145" textFill="WHITE" />
+                                                        <Label text="Following" textFill="#71767b" />
+                                                    </children>
+                                                </HBox>
+                                                <HBox spacing="4.0">
+                                                    <children>
+                                                        <Label style="-fx-font-weight: bold;" text="892" textFill="WHITE" />
+                                                        <Label text="Followers" textFill="#71767b" />
+                                                    </children>
+                                                </HBox>
                                             </children>
                                         </HBox>
                                     </children>
                                 </VBox>
 
-                                <!-- Posts tab header -->
+                                <!-- Posts tab -->
                                 <HBox alignment="CENTER" prefHeight="45.0" style="-fx-border-color: #333333; -fx-border-width: 0 0 1 0;">
                                     <children>
-                                        <Label text="Posts" textFill="WHITE" style="-fx-font-weight: bold; -fx-border-color: #1d9bf0; -fx-border-width: 0 0 3 0; -fx-padding: 0 0 10 0;" />
+                                        <Label style="-fx-font-weight: bold; -fx-border-color: #1d9bf0; -fx-border-width: 0 0 3 0; -fx-padding: 0 0 10 0;" text="Posts" textFill="WHITE" />
                                     </children>
                                 </HBox>
 
-                                <!-- Container for user's tweets -->
                                 <VBox fx:id="userTweetsContainer" spacing="1.0" style="-fx-background-color: #000000;" />
-
                             </children>
                         </VBox>
                     </content>
                 </ScrollPane>
 
+                <!-- Bottom navigation bar (Profile active) -->
+                <HBox alignment="CENTER" prefHeight="56.0" spacing="0.0" styleClass="bottom-bar">
+                    <children>
+                        <Button maxWidth="Infinity" minHeight="56.0" onAction="#handleGoToHome" styleClass="bottom-nav-item" text="🏠" HBox.hgrow="ALWAYS">
+                            <font>
+                                <Font size="20.0" />
+                            </font>
+                        </Button>
+                        <Button maxWidth="Infinity" minHeight="56.0" onAction="#handleGoToSearch" styleClass="bottom-nav-item" text="🔍" HBox.hgrow="ALWAYS">
+                            <font>
+                                <Font size="20.0" />
+                            </font>
+                        </Button>
+                        <Button maxWidth="Infinity" minHeight="56.0" onAction="#handleCreatePost" styleClass="bottom-nav-item" text="➕" HBox.hgrow="ALWAYS">
+                            <font>
+                                <Font size="20.0" />
+                            </font>
+                        </Button>
+                        <Button maxWidth="Infinity" minHeight="56.0" onAction="#handleGoToProfile" styleClass="bottom-nav-item, bottom-nav-active" text="👤" HBox.hgrow="ALWAYS">
+                            <font>
+                                <Font size="20.0" />
+                            </font>
+                        </Button>
+                    </children>
+                </HBox>
             </children>
         </VBox>
 
+        <!-- Side drawer overlay -->
+        <HBox fx:id="drawerOverlay" managed="false" mouseTransparent="true" visible="false" styleClass="drawer-overlay">
+            <children>
+                <VBox fx:id="drawerPanel" prefWidth="300.0" spacing="0.0" styleClass="drawer-panel">
+                    <children>
+                        <VBox spacing="6.0" styleClass="drawer-header">
+                            <padding>
+                                <Insets bottom="16.0" left="16.0" right="16.0" top="20.0" />
+                            </padding>
+                            <children>
+                                <StackPane alignment="CENTER_LEFT" prefHeight="48.0">
+                                    <children>
+                                        <Circle fill="#262626" radius="24.0" stroke="#333333" strokeWidth="1.0" />
+                                        <Label style="-fx-text-fill: #71767b; -fx-font-size: 22;" text="👤" />
+                                    </children>
+                                </StackPane>
+                                <Label fx:id="drawerDisplayName" styleClass="drawer-display-name" text="User">
+                                    <font>
+                                        <Font name="System Bold" size="17.0" />
+                                    </font>
+                                </Label>
+                                <Label fx:id="drawerUsername" styleClass="drawer-username" text="@user">
+                                    <font>
+                                        <Font size="14.0" />
+                                    </font>
+                                </Label>
+                                <HBox spacing="16.0" style="-fx-padding: 8 0 0 0;">
+                                    <children>
+                                        <HBox spacing="4.0">
+                                            <children>
+                                                <Label fx:id="drawerFollowingCount" styleClass="drawer-stat-count" text="145" />
+                                                <Label styleClass="drawer-stat-label" text="Following" />
+                                            </children>
+                                        </HBox>
+                                        <HBox spacing="4.0">
+                                            <children>
+                                                <Label fx:id="drawerFollowersCount" styleClass="drawer-stat-count" text="892" />
+                                                <Label styleClass="drawer-stat-label" text="Followers" />
+                                            </children>
+                                        </HBox>
+                                    </children>
+                                </HBox>
+                            </children>
+                        </VBox>
+
+                        <Region style="-fx-pref-height: 1; -fx-background-color: #333333;" />
+
+                        <VBox spacing="4.0" style="-fx-padding: 8 0 0 0;" VBox.vgrow="ALWAYS">
+                            <children>
+                                <Button alignment="BASELINE_LEFT" maxWidth="Infinity" minHeight="48.0" onAction="#handleGoToProfile" styleClass="drawer-menu-item" text="👤  Profile" />
+                                <Button alignment="BASELINE_LEFT" maxWidth="Infinity" minHeight="48.0" onAction="#handleGoToBookmarks" styleClass="drawer-menu-item" text="🔖  Bookmarks" />
+                                <Region VBox.vgrow="ALWAYS" />
+                                <Button alignment="BASELINE_LEFT" maxWidth="Infinity" minHeight="48.0" onAction="#handleLogout" styleClass="drawer-menu-item, drawer-logout" text="🚪  Log out" />
+                            </children>
+                        </VBox>
+                    </children>
+                </VBox>
+
+                <Region fx:id="drawerDimmer" onMouseClicked="#handleCloseDrawer" styleClass="drawer-dimmer" HBox.hgrow="ALWAYS" />
+            </children>
+        </HBox>
+
     </children>
-</HBox>
+</StackPane>

@@ -7,12 +7,14 @@ import client.TweetStore;
 import client.TweetStore.StoredTweet;
 import client.TweetTimeFormatter;
 import client.UserSession;
+import client.TweetMediaHelper;
 import javafx.animation.Animation;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.fxml.FXML;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextArea;
@@ -21,10 +23,10 @@ import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
-import javafx.scene.shape.Rectangle;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.stage.FileChooser;
@@ -32,14 +34,15 @@ import javafx.stage.Stage;
 import javafx.util.Duration;
 
 import java.io.File;
+
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
-public class FeedController {
+public class BookmarksController {
 
     @FXML
-    private VBox timelineContainer;
+    private VBox bookmarksContainer;
 
     @FXML
     private HBox drawerOverlay;
@@ -53,6 +56,9 @@ public class FeedController {
     @FXML
     private Label drawerUsername;
 
+    private final List<TimestampLabel> liveTimestamps = new ArrayList<>();
+    private Timeline timeRefreshTimeline;
+
     private static final String STYLE_ACTION_IDLE =
             "-fx-background-color: transparent; -fx-text-fill: #71767b; -fx-padding: 0; -fx-cursor: hand;";
     private static final String STYLE_REPLY_ACTIVE =
@@ -64,85 +70,57 @@ public class FeedController {
     private static final String STYLE_BOOKMARK_ACTIVE =
             "-fx-background-color: transparent; -fx-text-fill: #1d9bf0; -fx-padding: 0; -fx-cursor: hand;";
     private static final String STYLE_COMPOSE_AREA =
-            "-fx-control-inner-background: #000000; -fx-text-fill: #ffffff; -fx-prompt-text-fill: #71767b; "
-                    + "-fx-border-color: #333333; -fx-border-radius: 8; -fx-background-radius: 8;";
+            "-fx-control-inner-background: #000000; -fx-text-fill: #ffffff; -fx-prompt-text-fill: #71767b; -fx-border-color: #333333; -fx-border-radius: 8; -fx-background-radius: 8; -fx-font-size: 14px;";
     private static final String STYLE_POST_BTN =
-            "-fx-background-color: #1d9bf0; -fx-text-fill: #ffffff; -fx-background-radius: 20; -fx-font-weight: bold;";
+            "-fx-background-color: #1d9bf0; -fx-text-fill: #ffffff; -fx-background-radius: 18; -fx-font-weight: bold; -fx-font-size: 13px; -fx-padding: 4 14; -fx-cursor: hand;";
     private static final String STYLE_DELETE_BTN =
             "-fx-background-color: transparent; -fx-text-fill: #f4212e; -fx-padding: 0; -fx-cursor: hand; -fx-font-size: 14;";
-
-    /** Labels that need Twitter-style relative times refreshed while the feed is open. */
-    private final List<TimestampLabel> liveTimestamps = new ArrayList<>();
-    private Timeline timeRefreshTimeline;
 
     @FXML
     public void initialize() {
         SideDrawerHelper.populateUserHeader(drawerDisplayName, drawerUsername);
-        loadTimeline();
+        loadBookmarks();
         startTimestampRefresh();
     }
 
-    private void loadTimeline() {
-        timelineContainer.getChildren().clear();
+    private void loadBookmarks() {
+        bookmarksContainer.getChildren().clear();
         liveTimestamps.clear();
 
-        TweetStore store = TweetStore.getInstance();
-        store.seedIfEmpty();
+        TweetStore.getInstance().seedIfEmpty();
+        List<StoredTweet> bookmarkedList = TweetStore.getInstance().getBookmarkedTweets();
 
-        for (StoredTweet tweet : store.getTimelineTweets()) {
-            renderTweetCard(tweet, false);
+        if (bookmarkedList.isEmpty()) {
+            renderEmptyState();
+            return;
+        }
+
+        for (StoredTweet tweet : bookmarkedList) {
+            renderBookmarkTweetCard(tweet);
         }
     }
 
-    private void startTimestampRefresh() {
-        if (timeRefreshTimeline != null) {
-            timeRefreshTimeline.stop();
-        }
-        // Refresh relative labels so "now" → "1s" → "1m" while the user stays on Home
-        timeRefreshTimeline = new Timeline(
-                new KeyFrame(Duration.seconds(15), e -> refreshLiveTimestamps())
-        );
-        timeRefreshTimeline.setCycleCount(Animation.INDEFINITE);
-        timeRefreshTimeline.play();
+    private void renderEmptyState() {
+        VBox emptyBox = new VBox(8);
+        emptyBox.setStyle("-fx-padding: 80 40 40 40; -fx-alignment: center;");
+
+        Label titleLabel = new Label("No Bookmarks yet");
+        titleLabel.setTextFill(Color.WHITE);
+        titleLabel.setFont(Font.font("System", FontWeight.BOLD, 22));
+
+        Label subLabel = new Label("Bookmark posts to easily find them again in the future.");
+        subLabel.setTextFill(Color.web("#71767b"));
+        subLabel.setFont(Font.font("System", 14));
+        subLabel.setWrapText(true);
+
+        emptyBox.getChildren().addAll(titleLabel, subLabel);
+        bookmarksContainer.getChildren().add(emptyBox);
     }
 
-    private void refreshLiveTimestamps() {
-        for (TimestampLabel entry : liveTimestamps) {
-            entry.label.setText(TweetTimeFormatter.formatFeedDot(entry.createdAt));
-        }
-    }
-
-    private Label createTimestampLabel(Instant createdAt) {
-        Label timestamp = new Label(TweetTimeFormatter.formatFeedDot(createdAt));
-        timestamp.setTextFill(Color.web("#71767b"));
-        timestamp.setFont(Font.font("System", 14));
-        Tooltip.install(timestamp, new Tooltip(TweetTimeFormatter.formatAbsolute(createdAt)));
-        liveTimestamps.add(new TimestampLabel(timestamp, createdAt));
-        return timestamp;
-    }
-
-    private static final class TimestampLabel {
-        final Label label;
-        final Instant createdAt;
-
-        TimestampLabel(Label label, Instant createdAt) {
-            this.label = label;
-            this.createdAt = createdAt;
-        }
-    }
-
-    /**
-     * @param isNestedReply when true, card is indented under a parent (no nested reply UI)
-     */
-    private void renderTweetCard(StoredTweet tweet, boolean isNestedReply) {
+    private void renderBookmarkTweetCard(StoredTweet tweet) {
         VBox card = new VBox(6);
         card.setStyle("-fx-border-color: #333333; -fx-border-width: 0 0 1 0; -fx-padding: 12 16 12 16;");
-        if (isNestedReply) {
-            card.setPadding(new Insets(8, 8, 8, 36));
-            card.setStyle("-fx-border-color: #222222; -fx-border-width: 0 0 1 0; -fx-padding: 10 12 10 36;");
-        }
 
-        // Retweet context line
         if (tweet.isRetweet()) {
             Label repostLabel = new Label("🔁 " + safeName(tweet.getAuthorDisplayName()) + " reposted");
             repostLabel.setTextFill(Color.web("#71767b"));
@@ -170,21 +148,12 @@ public class FeedController {
         VBox contentStack = new VBox(4);
         HBox.setHgrow(contentStack, Priority.ALWAYS);
 
-        // For retweet cards, show original author in the header (X-style)
-        String headerName;
-        String headerHandle;
-        if (tweet.isRetweet()) {
-            headerName = tweet.getOriginalAuthorDisplayName() != null
-                    ? tweet.getOriginalAuthorDisplayName()
-                    : "User";
-            headerHandle = tweet.getOriginalAuthorUsername() != null
-                    ? tweet.getOriginalAuthorUsername()
-                    : "user";
-        }
-        else {
-            headerName = safeName(tweet.getAuthorDisplayName());
-            headerHandle = safeUsername(tweet.getAuthorUsername());
-        }
+        String headerName = tweet.isRetweet()
+                ? safeName(tweet.getOriginalAuthorDisplayName())
+                : safeName(tweet.getAuthorDisplayName());
+        String headerHandle = tweet.isRetweet()
+                ? safeUsername(tweet.getOriginalAuthorUsername())
+                : safeUsername(tweet.getAuthorUsername());
 
         HBox headerRow = new HBox(8);
         Label displayName = new Label(headerName);
@@ -199,86 +168,148 @@ public class FeedController {
 
         headerRow.getChildren().addAll(displayName, userHandle, timestamp);
 
-        // Delete only on posts you authored (original, retweet card, or reply)
-        if (isOwnedByCurrentUser(tweet)) {
-            javafx.scene.layout.Region spacer = new javafx.scene.layout.Region();
-            HBox.setHgrow(spacer, Priority.ALWAYS);
-            Button deleteButton = createDeleteButton(tweet.getId(), () -> loadTimeline());
-            headerRow.getChildren().addAll(spacer, deleteButton);
-        }
-
         Label bodyText = new Label(tweet.getContent());
         bodyText.setTextFill(Color.web("#e7e9ea"));
         bodyText.setFont(Font.font("System", 15));
         bodyText.setWrapText(true);
-        bodyText.setMaxWidth(isNestedReply ? 360 : 420);
+
+        StoredTweet engagementTarget = engagementTarget(tweet);
+
+        HBox actionToolbar = new HBox(40);
+        actionToolbar.setStyle("-fx-padding: 6 0 0 0;");
+
+        // Reply panel (composer + thread) toggled by reply button
+        VBox replyPanel = new VBox(8);
+        replyPanel.setVisible(false);
+        replyPanel.setManaged(false);
+        replyPanel.setStyle("-fx-padding: 8 0 0 0;");
+
+        Button replyButton = new Button();
+        applyReplyStyle(replyButton, engagementTarget);
+        replyButton.setOnAction(event -> {
+            boolean open = !replyPanel.isVisible();
+            replyPanel.setVisible(open);
+            replyPanel.setManaged(open);
+            if (open) {
+                rebuildReplyPanel(replyPanel, engagementTarget, replyButton);
+            }
+        });
+
+        Button retweetButton = new Button();
+        applyRetweetStyle(retweetButton, engagementTarget);
+        retweetButton.setOnAction(event -> {
+            TweetStore.getInstance().toggleRetweet(
+                    engagementTarget.getId(),
+                    currentUsername(),
+                    currentDisplayName()
+            );
+            loadBookmarks();
+        });
+
+        Button likeButton = new Button();
+        applyLikeStyle(likeButton, engagementTarget);
+        likeButton.setOnAction(event -> {
+            TweetStore.getInstance().toggleLike(engagementTarget.getId());
+            applyLikeStyle(likeButton, engagementTarget);
+        });
+
+        Button bookmarkButton = new Button();
+        applyBookmarkStyle(bookmarkButton, engagementTarget);
+        bookmarkButton.setOnAction(event -> {
+            TweetStore.getInstance().toggleBookmark(engagementTarget.getId());
+            loadBookmarks();
+        });
+
+        actionToolbar.getChildren().addAll(replyButton, retweetButton, likeButton, bookmarkButton);
 
         contentStack.getChildren().addAll(headerRow, bodyText);
         renderTweetMediaIfPresent(contentStack, tweet);
-
-        // Engagement toolbar uses the original for counts on retweet cards
-        StoredTweet engagementTarget = engagementTarget(tweet);
-
-        if (!isNestedReply) {
-            HBox actionToolbar = new HBox(40);
-            actionToolbar.setStyle("-fx-padding: 6 0 0 0;");
-
-            // Reply panel (composer + thread) toggled by mention button
-            VBox replyPanel = new VBox(8);
-            replyPanel.setVisible(false);
-            replyPanel.setManaged(false);
-            replyPanel.setStyle("-fx-padding: 8 0 0 0;");
-
-            Button replyButton = new Button();
-            applyReplyStyle(replyButton, engagementTarget);
-            replyButton.setOnAction(event -> {
-                boolean open = !replyPanel.isVisible();
-                replyPanel.setVisible(open);
-                replyPanel.setManaged(open);
-                if (open) {
-                    rebuildReplyPanel(replyPanel, engagementTarget, replyButton);
-                }
-            });
-
-            Button retweetButton = new Button();
-            applyRetweetStyle(retweetButton, engagementTarget);
-            retweetButton.setOnAction(event -> {
-                TweetStore.getInstance().toggleRetweet(
-                        engagementTarget.getId(),
-                        currentUsername(),
-                        currentDisplayName()
-                );
-                // Full reload so the new retweet card (or its removal) shows on the timeline
-                loadTimeline();
-            });
-
-            Button likeButton = new Button();
-            applyLikeStyle(likeButton, engagementTarget);
-            likeButton.setOnAction(event -> {
-                TweetStore.getInstance().toggleLike(engagementTarget.getId());
-                applyLikeStyle(likeButton, engagementTarget);
-            });
-
-            Button bookmarkButton = new Button();
-            applyBookmarkStyle(bookmarkButton, engagementTarget);
-            bookmarkButton.setOnAction(event -> {
-                TweetStore.getInstance().toggleBookmark(engagementTarget.getId());
-                applyBookmarkStyle(bookmarkButton, engagementTarget);
-            });
-
-            actionToolbar.getChildren().addAll(replyButton, retweetButton, likeButton, bookmarkButton);
-            contentStack.getChildren().add(actionToolbar);
-            contentStack.getChildren().add(replyPanel);
-        }
-
+        contentStack.getChildren().addAll(actionToolbar, replyPanel);
         tweetRow.getChildren().addAll(avatarBox, contentStack);
         card.getChildren().add(tweetRow);
-        timelineContainer.getChildren().add(card);
+
+        bookmarksContainer.getChildren().add(card);
     }
 
-    /**
-     * Builds the inline reply thread: list of replies + compose box.
-     */
+    private void startTimestampRefresh() {
+        if (timeRefreshTimeline != null) {
+            timeRefreshTimeline.stop();
+        }
+        timeRefreshTimeline = new Timeline(
+                new KeyFrame(Duration.seconds(15), e -> {
+                    for (TimestampLabel entry : liveTimestamps) {
+                        entry.label.setText(TweetTimeFormatter.formatFeedDot(entry.createdAt));
+                    }
+                })
+        );
+        timeRefreshTimeline.setCycleCount(Animation.INDEFINITE);
+        timeRefreshTimeline.play();
+    }
+
+    private Label createTimestampLabel(Instant createdAt) {
+        Label timestamp = new Label(TweetTimeFormatter.formatFeedDot(createdAt));
+        timestamp.setFont(Font.font("System", 14));
+        timestamp.setTextFill(Color.web("#71767b"));
+        Tooltip.install(timestamp, new Tooltip(TweetTimeFormatter.formatAbsolute(createdAt)));
+        liveTimestamps.add(new TimestampLabel(timestamp, createdAt));
+        return timestamp;
+    }
+
+    private static final class TimestampLabel {
+        final Label label;
+        final Instant createdAt;
+
+        TimestampLabel(Label label, Instant createdAt) {
+            this.label = label;
+            this.createdAt = createdAt;
+        }
+    }
+
+    private StoredTweet engagementTarget(StoredTweet tweet) {
+        if (tweet.isRetweet() && tweet.getRetweetOfId() != null) {
+            StoredTweet original = TweetStore.getInstance().findById(tweet.getRetweetOfId());
+            if (original != null) {
+                return original;
+            }
+        }
+        return tweet;
+    }
+
+    private void applyReplyStyle(Button button, StoredTweet tweet) {
+        button.setText("💬 " + tweet.getReplies());
+        button.setStyle(tweet.getReplies() > 0 ? STYLE_REPLY_ACTIVE : STYLE_ACTION_IDLE);
+    }
+
+    private void applyRetweetStyle(Button button, StoredTweet tweet) {
+        button.setText("🔁 " + tweet.getRetweets());
+        button.setStyle(tweet.isRetweetedByCurrentUser() ? STYLE_RETWEET_ACTIVE : STYLE_ACTION_IDLE);
+    }
+
+    private void applyLikeStyle(Button button, StoredTweet tweet) {
+        if (tweet.isLikedByCurrentUser()) {
+            button.setText("❤ " + tweet.getLikes());
+            button.setStyle(STYLE_LIKE_ACTIVE);
+        } else {
+            button.setText("♡ " + tweet.getLikes());
+            button.setStyle(STYLE_ACTION_IDLE);
+        }
+    }
+
+    private void applyBookmarkStyle(Button button, StoredTweet tweet) {
+        button.setText("🔖");
+        button.setStyle(tweet.isBookmarked() ? STYLE_BOOKMARK_ACTIVE : STYLE_ACTION_IDLE);
+    }
+
+    private void renderTweetMediaIfPresent(VBox contentStack, StoredTweet tweet) {
+        String mediaPath = tweet.getMediaPath();
+        if (mediaPath != null && !mediaPath.isBlank()) {
+            Node mediaNode = TweetMediaHelper.createMediaNode(mediaPath, 380, 220);
+            if (mediaNode != null) {
+                contentStack.getChildren().add(mediaNode);
+            }
+        }
+    }
+
     private void rebuildReplyPanel(VBox replyPanel, StoredTweet parent, Button replyButton) {
         replyPanel.getChildren().clear();
 
@@ -348,7 +379,7 @@ public class FeedController {
             File file = fileChooser.showOpenDialog(stage);
             if (file != null) {
                 replySelectedMediaPath[0] = file.toURI().toString();
-                javafx.scene.Node previewNode = client.TweetMediaHelper.createMediaNode(replySelectedMediaPath[0], 340, 150);
+                Node previewNode = TweetMediaHelper.createMediaNode(replySelectedMediaPath[0], 340, 150);
                 if (previewNode != null) {
                     replyMediaPreviewBox.getChildren().clear();
                     replyMediaPreviewBox.getChildren().add(previewNode);
@@ -364,7 +395,7 @@ public class FeedController {
         emojiBtn.setStyle("-fx-background-color: transparent; -fx-text-fill: #1d9bf0; -fx-font-size: 16px; -fx-padding: 4; -fx-cursor: hand;");
         emojiBtn.setOnAction(e -> client.EmojiPickerHelper.showEmojiPicker(emojiBtn, replyInput));
 
-        javafx.scene.layout.Region spacer = new javafx.scene.layout.Region();
+        Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
 
         Button sendReply = new Button("Reply");
@@ -410,10 +441,9 @@ public class FeedController {
         header.getChildren().addAll(name, handle, time);
 
         if (isOwnedByCurrentUser(reply)) {
-            javafx.scene.layout.Region spacer = new javafx.scene.layout.Region();
+            Region spacer = new Region();
             HBox.setHgrow(spacer, Priority.ALWAYS);
-            // Reload whole feed so parent reply counts stay correct
-            header.getChildren().addAll(spacer, createDeleteButton(reply.getId(), () -> loadTimeline()));
+            header.getChildren().addAll(spacer, createDeleteButton(reply.getId(), () -> loadBookmarks()));
         }
 
         Label body = new Label(reply.getContent());
@@ -425,7 +455,7 @@ public class FeedController {
         node.getChildren().addAll(header, body);
 
         if (reply.getMediaPath() != null && !reply.getMediaPath().isBlank()) {
-            javafx.scene.Node mediaNode = client.TweetMediaHelper.createMediaNode(reply.getMediaPath(), 340, 180);
+            Node mediaNode = TweetMediaHelper.createMediaNode(reply.getMediaPath(), 340, 180);
             if (mediaNode != null) {
                 node.getChildren().add(mediaNode);
             }
@@ -459,7 +489,7 @@ public class FeedController {
                     currentUsername(),
                     currentDisplayName()
             );
-            loadTimeline();
+            loadBookmarks();
         });
 
         Button likeBtn = new Button();
@@ -473,7 +503,7 @@ public class FeedController {
         applyBookmarkStyle(bookmarkBtn, reply);
         bookmarkBtn.setOnAction(event -> {
             TweetStore.getInstance().toggleBookmark(reply.getId());
-            applyBookmarkStyle(bookmarkBtn, reply);
+            loadBookmarks();
         });
 
         actionToolbar.getChildren().addAll(replyBtn, retweetBtn, likeBtn, bookmarkBtn);
@@ -486,8 +516,8 @@ public class FeedController {
         Button deleteButton = new Button("🗑");
         deleteButton.setStyle(STYLE_DELETE_BTN);
         deleteButton.setOnAction(event -> {
-            boolean deleted = TweetStore.getInstance().deleteTweet(tweetId, currentUsername());
-            if (deleted && afterDelete != null) {
+            String username = currentUsername();
+            if (TweetStore.getInstance().deleteTweet(tweetId, username)) {
                 afterDelete.run();
             }
         });
@@ -496,53 +526,6 @@ public class FeedController {
 
     private boolean isOwnedByCurrentUser(StoredTweet tweet) {
         return currentUsername().equals(tweet.getAuthorUsername());
-    }
-
-    private StoredTweet engagementTarget(StoredTweet tweet) {
-        if (tweet.isRetweet() && tweet.getRetweetOfId() != null) {
-            StoredTweet original = TweetStore.getInstance().findById(tweet.getRetweetOfId());
-            if (original != null) {
-                return original;
-            }
-        }
-        return tweet;
-    }
-
-    private void applyReplyStyle(Button button, StoredTweet tweet) {
-        button.setText("💬 " + tweet.getReplies());
-        // Highlight when there are replies (thread has content)
-        button.setStyle(tweet.getReplies() > 0 ? STYLE_REPLY_ACTIVE : STYLE_ACTION_IDLE);
-    }
-
-    private void applyRetweetStyle(Button button, StoredTweet tweet) {
-        button.setText("🔁 " + tweet.getRetweets());
-        button.setStyle(tweet.isRetweetedByCurrentUser() ? STYLE_RETWEET_ACTIVE : STYLE_ACTION_IDLE);
-    }
-
-    private void applyLikeStyle(Button button, StoredTweet tweet) {
-        if (tweet.isLikedByCurrentUser()) {
-            button.setText("❤ " + tweet.getLikes());
-            button.setStyle(STYLE_LIKE_ACTIVE);
-        }
-        else {
-            button.setText("♡ " + tweet.getLikes());
-            button.setStyle(STYLE_ACTION_IDLE);
-        }
-    }
-
-    private void applyBookmarkStyle(Button button, StoredTweet tweet) {
-        button.setText("🔖");
-        button.setStyle(tweet.isBookmarked() ? STYLE_BOOKMARK_ACTIVE : STYLE_ACTION_IDLE);
-    }
-
-    private void renderTweetMediaIfPresent(VBox contentStack, StoredTweet tweet) {
-        String mediaPath = tweet.getMediaPath();
-        if (mediaPath != null && !mediaPath.isBlank()) {
-            javafx.scene.Node mediaNode = client.TweetMediaHelper.createMediaNode(mediaPath, 380, 220);
-            if (mediaNode != null) {
-                contentStack.getChildren().add(mediaNode);
-            }
-        }
     }
 
     private String currentUsername() {
@@ -574,9 +557,13 @@ public class FeedController {
     }
 
     @FXML
+    private void handleBack() {
+        NavigationManager.switchScene("/views/Feed.fxml");
+    }
+
+    @FXML
     private void handleGoToHome() {
-        // Already on Home; close drawer if it was open
-        SideDrawerHelper.close(drawerOverlay, drawerPanel);
+        NavigationManager.switchScene("/views/Feed.fxml");
     }
 
     @FXML
@@ -596,7 +583,7 @@ public class FeedController {
 
     @FXML
     private void handleGoToBookmarks() {
-        NavigationManager.switchScene("/views/Bookmarks.fxml");
+        SideDrawerHelper.close(drawerOverlay, drawerPanel);
     }
 
     @FXML
