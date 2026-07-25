@@ -7,16 +7,21 @@ import client.TweetStore;
 import client.TweetStore.StoredTweet;
 import client.TweetTimeFormatter;
 import client.UserSession;
+import client.TweetMediaHelper;
 import javafx.animation.Animation;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.fxml.FXML;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
+import javafx.scene.Node;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonBar;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.DialogPane;
 import javafx.scene.control.Label;
+import javafx.scene.control.TextArea;
 import javafx.scene.control.Tooltip;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
@@ -88,12 +93,20 @@ public class ProfileController {
 
     private static final String STYLE_ACTION_IDLE =
             "-fx-background-color: transparent; -fx-text-fill: #71767b; -fx-padding: 0; -fx-cursor: hand;";
+    private static final String STYLE_REPLY_ACTIVE =
+            "-fx-background-color: transparent; -fx-text-fill: #1d9bf0; -fx-padding: 0; -fx-cursor: hand;";
     private static final String STYLE_RETWEET_ACTIVE =
             "-fx-background-color: transparent; -fx-text-fill: #00ba7c; -fx-padding: 0; -fx-cursor: hand;";
     private static final String STYLE_LIKE_ACTIVE =
             "-fx-background-color: transparent; -fx-text-fill: #f91880; -fx-padding: 0; -fx-cursor: hand;";
     private static final String STYLE_BOOKMARK_ACTIVE =
             "-fx-background-color: transparent; -fx-text-fill: #1d9bf0; -fx-padding: 0; -fx-cursor: hand;";
+    private static final String STYLE_COMPOSE_AREA =
+            "-fx-control-inner-background: #000000; -fx-text-fill: #ffffff; -fx-prompt-text-fill: #71767b; -fx-border-color: #333333; -fx-border-radius: 8; -fx-background-radius: 8; -fx-font-size: 14px;";
+    private static final String STYLE_POST_BTN =
+            "-fx-background-color: #1d9bf0; -fx-text-fill: #ffffff; -fx-background-radius: 18; -fx-font-weight: bold; -fx-font-size: 13px; -fx-padding: 4 14; -fx-cursor: hand;";
+    private static final String STYLE_DELETE_BTN =
+            "-fx-background-color: transparent; -fx-text-fill: #f4212e; -fx-padding: 0; -fx-cursor: hand; -fx-font-size: 14;";
 
     @FXML
     public void initialize() {
@@ -211,24 +224,22 @@ public class ProfileController {
 
         headerRow.getChildren().addAll(displayName, userHandle, timestamp);
 
-        // Profile only lists this user's posts — always offer delete
-        Region spacer = new Region();
-        HBox.setHgrow(spacer, Priority.ALWAYS);
-        Button deleteButton = new Button("🗑");
-        deleteButton.setStyle(
-                "-fx-background-color: transparent; -fx-text-fill: #f4212e; -fx-padding: 0; "
-                        + "-fx-cursor: hand; -fx-font-size: 14;"
-        );
-        deleteButton.setOnAction(event -> {
-            String username = UserSession.getInstance().getUsername();
-            if (username == null) {
-                username = "developer";
-            }
-            if (TweetStore.getInstance().deleteTweet(tweet.getId(), username)) {
-                refreshProfileData();
-            }
-        });
-        headerRow.getChildren().addAll(spacer, deleteButton);
+        StoredTweet engagementTarget = engagementTarget(tweet);
+
+        // Header: Delete button ONLY for self-authored posts (not retweets)
+        if (!tweet.isRetweet()) {
+            Region spacer = new Region();
+            HBox.setHgrow(spacer, Priority.ALWAYS);
+            Button deleteButton = new Button("🗑");
+            deleteButton.setStyle(STYLE_DELETE_BTN);
+            deleteButton.setOnAction(event -> {
+                String username = currentUsername();
+                if (TweetStore.getInstance().deleteTweet(tweet.getId(), username)) {
+                    refreshProfileData();
+                }
+            });
+            headerRow.getChildren().addAll(spacer, deleteButton);
+        }
 
         Label bodyText = new Label(tweet.getContent());
         bodyText.setFont(Font.font("System", 15));
@@ -239,40 +250,78 @@ public class ProfileController {
         HBox actionToolbar = new HBox(40);
         actionToolbar.setStyle("-fx-padding: 6 0 0 0;");
 
-        Button retweetButton = new Button();
-        applyRetweetStyle(retweetButton, tweet);
-        retweetButton.setOnAction(event -> {
-            TweetStore.getInstance().toggleRetweet(
-                    tweet.getId(),
-                    currentUsername(),
-                    currentDisplayName()
-            );
-            refreshProfileData();
+        // Reply panel (composer + thread) toggled by reply button
+        VBox replyPanel = new VBox(8);
+        replyPanel.setVisible(false);
+        replyPanel.setManaged(false);
+        replyPanel.setStyle("-fx-padding: 8 0 0 0;");
+
+        // Mention/Reply button (💬) - present on ALL profile cards
+        Button replyButton = new Button();
+        applyReplyStyle(replyButton, engagementTarget);
+        replyButton.setOnAction(event -> {
+            boolean open = !replyPanel.isVisible();
+            replyPanel.setVisible(open);
+            replyPanel.setManaged(open);
+            if (open) {
+                rebuildReplyPanel(replyPanel, engagementTarget, replyButton);
+            }
         });
 
         Button likeButton = new Button();
-        applyLikeStyle(likeButton, tweet);
+        applyLikeStyle(likeButton, engagementTarget);
         likeButton.setOnAction(event -> {
-            TweetStore.getInstance().toggleLike(tweet.getId());
-            applyLikeStyle(likeButton, tweet);
+            TweetStore.getInstance().toggleLike(engagementTarget.getId());
+            applyLikeStyle(likeButton, engagementTarget);
         });
 
         Button bookmarkButton = new Button();
-        applyBookmarkStyle(bookmarkButton, tweet);
+        applyBookmarkStyle(bookmarkButton, engagementTarget);
         bookmarkButton.setOnAction(event -> {
-            TweetStore.getInstance().toggleBookmark(tweet.getId());
-            applyBookmarkStyle(bookmarkButton, tweet);
+            TweetStore.getInstance().toggleBookmark(engagementTarget.getId());
+            applyBookmarkStyle(bookmarkButton, engagementTarget);
         });
 
-        actionToolbar.getChildren().addAll(retweetButton, likeButton, bookmarkButton);
+        if (!tweet.isRetweet()) {
+            // Self-authored: Mention/Reply, Like, Bookmark (No Retweet button)
+            actionToolbar.getChildren().addAll(replyButton, likeButton, bookmarkButton);
+        } else {
+            // Retweeted post: Mention/Reply, Retweet, Like, Bookmark
+            Button retweetButton = new Button();
+            applyRetweetStyle(retweetButton, engagementTarget);
+            retweetButton.setOnAction(event -> {
+                TweetStore.getInstance().toggleRetweet(
+                        engagementTarget.getId(),
+                        currentUsername(),
+                        currentDisplayName()
+                );
+                refreshProfileData();
+            });
+            actionToolbar.getChildren().addAll(replyButton, retweetButton, likeButton, bookmarkButton);
+        }
 
         contentStack.getChildren().addAll(headerRow, bodyText);
         renderTweetMediaIfPresent(contentStack, tweet);
-        contentStack.getChildren().add(actionToolbar);
+        contentStack.getChildren().addAll(actionToolbar, replyPanel);
         tweetRow.getChildren().addAll(avatarBox, contentStack);
         card.getChildren().add(tweetRow);
 
         userTweetsContainer.getChildren().add(card);
+    }
+
+    private StoredTweet engagementTarget(StoredTweet tweet) {
+        if (tweet.isRetweet() && tweet.getRetweetOfId() != null) {
+            StoredTweet original = TweetStore.getInstance().findById(tweet.getRetweetOfId());
+            if (original != null) {
+                return original;
+            }
+        }
+        return tweet;
+    }
+
+    private void applyReplyStyle(Button button, StoredTweet tweet) {
+        button.setText("💬 " + tweet.getReplies());
+        button.setStyle(tweet.getReplies() > 0 ? STYLE_REPLY_ACTIVE : STYLE_ACTION_IDLE);
     }
 
     private void applyRetweetStyle(Button button, StoredTweet tweet) {
@@ -298,11 +347,184 @@ public class ProfileController {
     private void renderTweetMediaIfPresent(VBox contentStack, StoredTweet tweet) {
         String mediaPath = tweet.getMediaPath();
         if (mediaPath != null && !mediaPath.isBlank()) {
-            javafx.scene.Node mediaNode = client.TweetMediaHelper.createMediaNode(mediaPath, 380, 220);
+            Node mediaNode = TweetMediaHelper.createMediaNode(mediaPath, 380, 220);
             if (mediaNode != null) {
                 contentStack.getChildren().add(mediaNode);
             }
         }
+    }
+
+    private void rebuildReplyPanel(VBox replyPanel, StoredTweet parent, Button replyButton) {
+        replyPanel.getChildren().clear();
+
+        List<StoredTweet> replies = TweetStore.getInstance().getReplies(parent.getId());
+
+        if (replies.isEmpty()) {
+            Label empty = new Label("No replies yet — be the first to reply.");
+            empty.setTextFill(Color.web("#71767b"));
+            empty.setFont(Font.font("System", 13));
+            replyPanel.getChildren().add(empty);
+        }
+        else {
+            VBox thread = new VBox(0);
+            for (StoredTweet reply : replies) {
+                thread.getChildren().add(buildNestedReplyNode(reply));
+            }
+            replyPanel.getChildren().add(thread);
+        }
+
+        TextArea replyInput = new TextArea();
+        replyInput.setPromptText("Post your reply");
+        replyInput.setPrefRowCount(2);
+        replyInput.setWrapText(true);
+        replyInput.setStyle(STYLE_COMPOSE_AREA);
+        replyInput.setMaxWidth(Double.MAX_VALUE);
+
+        // Reply Media Attachment Preview Container
+        StackPane replyMediaPreviewContainer = new StackPane();
+        replyMediaPreviewContainer.setAlignment(Pos.TOP_RIGHT);
+        replyMediaPreviewContainer.setMaxHeight(160);
+        replyMediaPreviewContainer.setMaxWidth(340);
+        replyMediaPreviewContainer.setVisible(false);
+        replyMediaPreviewContainer.setManaged(false);
+        replyMediaPreviewContainer.setStyle("-fx-background-color: #16181c; -fx-background-radius: 10; -fx-border-color: #333333; -fx-border-radius: 10;");
+
+        VBox replyMediaPreviewBox = new VBox();
+        replyMediaPreviewBox.setAlignment(Pos.CENTER);
+
+        final String[] replySelectedMediaPath = new String[1];
+
+        Button removeReplyMediaBtn = new Button("✕");
+        removeReplyMediaBtn.setStyle("-fx-background-color: rgba(15, 20, 25, 0.75); -fx-text-fill: white; -fx-background-radius: 50%; -fx-min-width: 24px; -fx-min-height: 24px; -fx-font-size: 11px; -fx-cursor: hand;");
+        StackPane.setMargin(removeReplyMediaBtn, new Insets(6, 6, 0, 0));
+        removeReplyMediaBtn.setOnAction(e -> {
+            replySelectedMediaPath[0] = null;
+            replyMediaPreviewBox.getChildren().clear();
+            replyMediaPreviewContainer.setVisible(false);
+            replyMediaPreviewContainer.setManaged(false);
+        });
+
+        replyMediaPreviewContainer.getChildren().addAll(replyMediaPreviewBox, removeReplyMediaBtn);
+
+        HBox replyActions = new HBox(12);
+        replyActions.setAlignment(Pos.CENTER_RIGHT);
+
+        Button attachMediaBtn = new Button("🖼️");
+        attachMediaBtn.setStyle("-fx-background-color: transparent; -fx-text-fill: #1d9bf0; -fx-font-size: 16px; -fx-padding: 4; -fx-cursor: hand;");
+        attachMediaBtn.setOnAction(e -> {
+            FileChooser fileChooser = new FileChooser();
+            fileChooser.setTitle("Attach Media to Reply");
+            fileChooser.getExtensionFilters().addAll(
+                    new FileChooser.ExtensionFilter("Media Files (*.png, *.jpg, *.jpeg, *.gif, *.mp4, *.m4v)", "*.png", "*.jpg", "*.jpeg", "*.gif", "*.mp4", "*.m4v"),
+                    new FileChooser.ExtensionFilter("Image Files", "*.png", "*.jpg", "*.jpeg", "*.gif"),
+                    new FileChooser.ExtensionFilter("Video Files", "*.mp4", "*.m4v")
+            );
+            Stage stage = (Stage) replyInput.getScene().getWindow();
+            File file = fileChooser.showOpenDialog(stage);
+            if (file != null) {
+                replySelectedMediaPath[0] = file.toURI().toString();
+                Node previewNode = TweetMediaHelper.createMediaNode(replySelectedMediaPath[0], 340, 150);
+                if (previewNode != null) {
+                    replyMediaPreviewBox.getChildren().clear();
+                    replyMediaPreviewBox.getChildren().add(previewNode);
+                    replyMediaPreviewContainer.setVisible(true);
+                    replyMediaPreviewContainer.setManaged(true);
+                } else {
+                    replySelectedMediaPath[0] = null;
+                }
+            }
+        });
+
+        Region spacer = new Region();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
+
+        Button sendReply = new Button("Reply");
+        sendReply.setStyle(STYLE_POST_BTN);
+        sendReply.setOnAction(e -> {
+            String text = replyInput.getText() != null ? replyInput.getText().trim() : "";
+            if (text.isEmpty() && replySelectedMediaPath[0] == null) {
+                return;
+            }
+            TweetStore.getInstance().addReply(
+                    parent.getId(),
+                    text,
+                    currentUsername(),
+                    currentDisplayName(),
+                    replySelectedMediaPath[0]
+            );
+            applyReplyStyle(replyButton, parent);
+            rebuildReplyPanel(replyPanel, parent, replyButton);
+        });
+
+        replyActions.getChildren().addAll(attachMediaBtn, spacer, sendReply);
+
+        replyPanel.getChildren().addAll(replyInput, replyMediaPreviewContainer, replyActions);
+    }
+
+    private VBox buildNestedReplyNode(StoredTweet reply) {
+        VBox node = new VBox(4);
+        node.setPadding(new Insets(10, 0, 10, 12));
+        node.setStyle("-fx-border-color: #333333; -fx-border-width: 0 0 0 2; -fx-padding: 8 0 8 12;");
+
+        HBox header = new HBox(8);
+        Label name = new Label(safeName(reply.getAuthorDisplayName()));
+        name.setTextFill(Color.WHITE);
+        name.setFont(Font.font("System", FontWeight.BOLD, 14));
+
+        Label handle = new Label("@" + safeUsername(reply.getAuthorUsername()));
+        handle.setTextFill(Color.web("#71767b"));
+        handle.setFont(Font.font("System", 13));
+
+        Label time = createTimestampLabel(reply.getCreatedAt());
+        time.setFont(Font.font("System", 13));
+
+        header.getChildren().addAll(name, handle, time);
+
+        if (isOwnedByCurrentUser(reply)) {
+            Region spacer = new Region();
+            HBox.setHgrow(spacer, Priority.ALWAYS);
+            header.getChildren().addAll(spacer, createDeleteButton(reply.getId(), () -> refreshProfileData()));
+        }
+
+        Label body = new Label(reply.getContent());
+        body.setTextFill(Color.web("#e7e9ea"));
+        body.setFont(Font.font("System", 14));
+        body.setWrapText(true);
+        body.setMaxWidth(400);
+
+        node.getChildren().addAll(header, body);
+
+        if (reply.getMediaPath() != null && !reply.getMediaPath().isBlank()) {
+            Node mediaNode = TweetMediaHelper.createMediaNode(reply.getMediaPath(), 340, 180);
+            if (mediaNode != null) {
+                node.getChildren().add(mediaNode);
+            }
+        }
+        return node;
+    }
+
+    private Button createDeleteButton(int tweetId, Runnable afterDelete) {
+        Button deleteButton = new Button("🗑");
+        deleteButton.setStyle(STYLE_DELETE_BTN);
+        deleteButton.setOnAction(event -> {
+            String username = currentUsername();
+            if (TweetStore.getInstance().deleteTweet(tweetId, username)) {
+                afterDelete.run();
+            }
+        });
+        return deleteButton;
+    }
+
+    private boolean isOwnedByCurrentUser(StoredTweet tweet) {
+        return currentUsername().equals(tweet.getAuthorUsername());
+    }
+
+    private String safeName(String name) {
+        return (name == null || name.isBlank()) ? "Guest" : name;
+    }
+
+    private String safeUsername(String username) {
+        return (username == null || username.isBlank()) ? "developer" : username;
     }
 
     private String currentUsername() {
