@@ -6,7 +6,7 @@ import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
-import client.network.serverConnection;
+import client.network.ServerConnection;
 import com.google.gson.JsonObject;
 import shared.protocol.Request;
 import shared.protocol.RequestType;
@@ -33,7 +33,7 @@ public class LoginController {
     private Label errorLabel;
 
     // Network connection instance
-    private final serverConnection connection = new serverConnection();
+    private final ServerConnection connection = new ServerConnection();
 
     @FXML
     public void initialize() {

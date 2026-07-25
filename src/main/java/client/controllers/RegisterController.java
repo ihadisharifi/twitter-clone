@@ -1,7 +1,7 @@
 package client.controllers;
 
 import client.NavigationManager;
-import client.network.serverConnection;
+import client.network.ServerConnection;
 import com.google.gson.JsonObject;
 import javafx.fxml.FXML;
 import javafx.scene.control.Label;
@@ -32,7 +32,7 @@ public class RegisterController {
     private Label errorLabel;
 
     // Isolated network connection context for this screen
-    private final serverConnection connection = new serverConnection();
+    private final ServerConnection connection = new ServerConnection();
 
     /**
      * Extracts inputs, packs them into a standard JSON payload, and requests remote account creation.

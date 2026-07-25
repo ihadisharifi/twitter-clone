@@ -29,7 +29,7 @@ public class ServerConnection {
         return INSTANCE;
     }
 
-    private ServerConnection() {}
+    public ServerConnection() {}
 
     private Socket socket;
     private PrintWriter out;
