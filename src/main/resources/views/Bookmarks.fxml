@@ -46,11 +46,12 @@
                 </StackPane>
 
                 <!-- Page title -->
-                <HBox alignment="CENTER_LEFT" prefHeight="50.0" style="-fx-border-color: #333333; -fx-border-width: 0 0 1 0;">
+                <HBox alignment="CENTER_LEFT" prefHeight="50.0" spacing="12.0" style="-fx-border-color: #333333; -fx-border-width: 0 0 1 0;">
                     <padding>
-                        <Insets left="16.0" />
+                        <Insets left="12.0" right="16.0" />
                     </padding>
                     <children>
+                        <Button onAction="#handleBack" style="-fx-background-color: transparent; -fx-text-fill: #ffffff; -fx-font-size: 18px; -fx-cursor: hand; -fx-padding: 4 8;" text="←" />
                         <Label text="Bookmarks" textFill="WHITE">
                             <font>
                                 <Font name="System Bold" size="18.0" />

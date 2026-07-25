@@ -286,6 +286,11 @@ public class BookmarksController {
     }
 
     @FXML
+    private void handleBack() {
+        NavigationManager.switchScene("/views/Feed.fxml");
+    }
+
+    @FXML
     private void handleGoToHome() {
         NavigationManager.switchScene("/views/Feed.fxml");
     }
