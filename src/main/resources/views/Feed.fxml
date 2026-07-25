@@ -47,20 +47,6 @@
                     </children>
                 </StackPane>
 
-                <!-- Tweet composer -->
-                <VBox spacing="10.0" style="-fx-border-color: #333333; -fx-border-width: 0 0 1 0;">
-                    <children>
-                        <TextArea fx:id="tweetTextArea" minHeight="80.0" prefHeight="80.0" promptText="What's happening?!" style="-fx-control-inner-background: #000000; -fx-text-fill: #ffffff; -fx-prompt-text-fill: #71767b; -fx-border-color: transparent;" wrapText="true" />
-                        <HBox alignment="CENTER_RIGHT">
-                            <children>
-                                <Button onAction="#handlePostTweet" style="-fx-background-color: #1d9bf0; -fx-text-fill: #ffffff; -fx-background-radius: 20; -fx-font-weight: bold;" text="Post" />
-                            </children>
-                        </HBox>
-                    </children>
-                    <padding>
-                        <Insets bottom="15.0" left="15.0" right="15.0" top="15.0" />
-                    </padding>
-                </VBox>
 
                 <!-- Scrollable timeline -->
                 <ScrollPane fitToWidth="true" hbarPolicy="NEVER" style="-fx-background: #000000; -fx-background-color: #000000;" vbarPolicy="AS_NEEDED" VBox.vgrow="ALWAYS">

@@ -30,9 +30,6 @@ import java.util.List;
 public class FeedController {
 
     @FXML
-    private TextArea tweetTextArea;
-
-    @FXML
     private VBox timelineContainer;
 
     @FXML
@@ -66,40 +63,12 @@ public class FeedController {
     /** Labels that need Twitter-style relative times refreshed while the feed is open. */
     private final List<TimestampLabel> liveTimestamps = new ArrayList<>();
     private Timeline timeRefreshTimeline;
-    private static boolean shouldFocusComposer = false;
-
-    public static void setShouldFocusComposer(boolean focus) {
-        shouldFocusComposer = focus;
-    }
 
     @FXML
     public void initialize() {
         SideDrawerHelper.populateUserHeader(drawerDisplayName, drawerUsername);
         loadTimeline();
         startTimestampRefresh();
-        if (shouldFocusComposer) {
-            shouldFocusComposer = false;
-            javafx.application.Platform.runLater(() -> {
-                if (tweetTextArea != null) {
-                    tweetTextArea.requestFocus();
-                }
-            });
-        }
-    }
-
-    @FXML
-    private void handlePostTweet() {
-        String content = tweetTextArea.getText().trim();
-        if (content.isEmpty()) {
-            return;
-        }
-
-        String username = currentUsername();
-        String displayName = currentDisplayName();
-
-        TweetStore.getInstance().addTweet(content, username, displayName);
-        tweetTextArea.clear();
-        loadTimeline();
     }
 
     private void loadTimeline() {
@@ -465,9 +434,7 @@ public class FeedController {
 
     @FXML
     private void handleCreatePost() {
-        if (tweetTextArea != null) {
-            tweetTextArea.requestFocus();
-        }
+        NavigationManager.switchScene("/views/Compose.fxml");
     }
 
     @FXML

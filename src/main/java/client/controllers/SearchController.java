@@ -208,8 +208,7 @@ public class SearchController {
 
     @FXML
     private void handleCreatePost() {
-        FeedController.setShouldFocusComposer(true);
-        NavigationManager.switchScene("/views/Feed.fxml");
+        NavigationManager.switchScene("/views/Compose.fxml");
     }
 
     @FXML
