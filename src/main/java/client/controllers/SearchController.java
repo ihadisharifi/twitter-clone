@@ -1,5 +1,6 @@
 package client.controllers;
 
+import client.LogoutHelper;
 import client.NavigationManager;
 import client.SideDrawerHelper;
 import client.TweetStore;
@@ -292,8 +293,6 @@ public class SearchController {
 
     @FXML
     private void handleLogout() {
-        UserSession.getInstance().clearSession();
-        TweetStore.getInstance().clear();
-        NavigationManager.switchScene("/views/Login.fxml");
+        LogoutHelper.showConfirmation();
     }
 }

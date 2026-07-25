@@ -1,5 +1,6 @@
 package client.controllers;
 
+import client.LogoutHelper;
 import client.NavigationManager;
 import client.SideDrawerHelper;
 import client.TweetStore;
@@ -463,9 +464,6 @@ public class FeedController {
 
     @FXML
     private void handleLogout() {
-        System.out.println("Invalidating active user context channel. Rerouting to login...");
-        UserSession.getInstance().clearSession();
-        TweetStore.getInstance().clear();
-        NavigationManager.switchScene("/views/Login.fxml");
+        LogoutHelper.showConfirmation();
     }
 }
