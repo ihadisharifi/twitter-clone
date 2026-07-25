@@ -139,6 +139,29 @@ public class TweetStore {
         return target.toggleLike();
     }
 
+    public synchronized boolean toggleBookmark(String tweetId) {
+        if (tweetId == null) {
+            return false;
+        }
+        try {
+            int id = Integer.parseInt(tweetId.trim());
+            return toggleBookmark(id);
+        } catch (NumberFormatException e) {
+            return false;
+        }
+    }
+
+    public synchronized boolean toggleBookmark(int tweetId) {
+        StoredTweet tweet = findById(tweetId);
+        if (tweet == null) {
+            return false;
+        }
+        StoredTweet target = resolveOriginal(tweet);
+        boolean newState = !target.isBookmarked();
+        target.setBookmarked(newState);
+        return newState;
+    }
+
     /**
      * Deletes a tweet owned by {@code username}.
      * <ul>
@@ -269,6 +292,16 @@ public class TweetStore {
         return Collections.unmodifiableList(result);
     }
 
+    public synchronized List<StoredTweet> getBookmarkedTweets() {
+        List<StoredTweet> result = new ArrayList<>();
+        for (StoredTweet tweet : tweets) {
+            if (tweet.isBookmarked()) {
+                result.add(tweet);
+            }
+        }
+        return Collections.unmodifiableList(result);
+    }
+
     /** Alias for timeline roots; prefer {@link #getTimelineTweets()}. */
     public synchronized List<StoredTweet> getAllTweets() {
         return getTimelineTweets();
@@ -347,6 +380,7 @@ public class TweetStore {
         private int retweets;
         private boolean likedByCurrentUser;
         private boolean retweetedByCurrentUser;
+        private boolean isBookmarked;
 
         public StoredTweet(
                 int id,
@@ -395,6 +429,11 @@ public class TweetStore {
 
         public boolean isLikedByCurrentUser() { return likedByCurrentUser; }
         public boolean isRetweetedByCurrentUser() { return retweetedByCurrentUser; }
+        public boolean isBookmarked() { return isBookmarked; }
+
+        public void setBookmarked(boolean bookmarked) {
+            this.isBookmarked = bookmarked;
+        }
 
         void setRetweetedByCurrentUser(boolean value) {
             this.retweetedByCurrentUser = value;

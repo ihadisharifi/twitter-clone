@@ -59,23 +59,10 @@
                     </children>
                 </HBox>
 
-                <!-- Empty state -->
+                <!-- Scrollable timeline for bookmarked tweets -->
                 <ScrollPane fitToWidth="true" hbarPolicy="NEVER" style="-fx-background: #000000; -fx-background-color: #000000;" vbarPolicy="AS_NEEDED" VBox.vgrow="ALWAYS">
                     <content>
-                        <VBox alignment="CENTER" spacing="8.0" style="-fx-background-color: #000000; -fx-padding: 80 40 40 40;">
-                            <children>
-                                <Label text="Save posts for later" textFill="WHITE">
-                                    <font>
-                                        <Font name="System Bold" size="28.0" />
-                                    </font>
-                                </Label>
-                                <Label alignment="CENTER" maxWidth="320.0" text="Bookmark posts to easily find them again in the future." textFill="#71767b" wrapText="true">
-                                    <font>
-                                        <Font size="14.0" />
-                                    </font>
-                                </Label>
-                            </children>
-                        </VBox>
+                        <VBox fx:id="bookmarksContainer" spacing="1.0" style="-fx-background-color: #000000;" />
                     </content>
                 </ScrollPane>
 

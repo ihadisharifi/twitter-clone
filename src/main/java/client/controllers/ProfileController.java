@@ -54,6 +54,15 @@ public class ProfileController {
     private final List<TimestampLabel> liveTimestamps = new ArrayList<>();
     private Timeline timeRefreshTimeline;
 
+    private static final String STYLE_ACTION_IDLE =
+            "-fx-background-color: transparent; -fx-text-fill: #71767b; -fx-padding: 0; -fx-cursor: hand;";
+    private static final String STYLE_RETWEET_ACTIVE =
+            "-fx-background-color: transparent; -fx-text-fill: #00ba7c; -fx-padding: 0; -fx-cursor: hand;";
+    private static final String STYLE_LIKE_ACTIVE =
+            "-fx-background-color: transparent; -fx-text-fill: #f91880; -fx-padding: 0; -fx-cursor: hand;";
+    private static final String STYLE_BOOKMARK_ACTIVE =
+            "-fx-background-color: transparent; -fx-text-fill: #1d9bf0; -fx-padding: 0; -fx-cursor: hand;";
+
     @FXML
     public void initialize() {
         SideDrawerHelper.populateUserHeader(drawerDisplayName, drawerUsername);
@@ -105,7 +114,9 @@ public class ProfileController {
         List<StoredTweet> personalPosts = TweetStore.getInstance().getTweetsByUsername(username);
 
         for (StoredTweet tweet : personalPosts) {
-            renderPersonalTweetCard(tweet);
+            if (username.equals(tweet.getAuthorUsername())) {
+                renderPersonalTweetCard(tweet);
+            }
         }
     }
 
@@ -193,11 +204,71 @@ public class ProfileController {
         bodyText.setWrapText(true);
         bodyText.setMaxWidth(420);
 
-        contentStack.getChildren().addAll(headerRow, bodyText);
+        HBox actionToolbar = new HBox(40);
+        actionToolbar.setStyle("-fx-padding: 6 0 0 0;");
+
+        Button retweetButton = new Button();
+        applyRetweetStyle(retweetButton, tweet);
+        retweetButton.setOnAction(event -> {
+            TweetStore.getInstance().toggleRetweet(
+                    tweet.getId(),
+                    currentUsername(),
+                    currentDisplayName()
+            );
+            refreshProfileData();
+        });
+
+        Button likeButton = new Button();
+        applyLikeStyle(likeButton, tweet);
+        likeButton.setOnAction(event -> {
+            TweetStore.getInstance().toggleLike(tweet.getId());
+            applyLikeStyle(likeButton, tweet);
+        });
+
+        Button bookmarkButton = new Button();
+        applyBookmarkStyle(bookmarkButton, tweet);
+        bookmarkButton.setOnAction(event -> {
+            TweetStore.getInstance().toggleBookmark(tweet.getId());
+            applyBookmarkStyle(bookmarkButton, tweet);
+        });
+
+        actionToolbar.getChildren().addAll(retweetButton, likeButton, bookmarkButton);
+
+        contentStack.getChildren().addAll(headerRow, bodyText, actionToolbar);
         tweetRow.getChildren().addAll(avatarBox, contentStack);
         card.getChildren().add(tweetRow);
 
         userTweetsContainer.getChildren().add(card);
+    }
+
+    private void applyRetweetStyle(Button button, StoredTweet tweet) {
+        button.setText("🔁 " + tweet.getRetweets());
+        button.setStyle(tweet.isRetweetedByCurrentUser() ? STYLE_RETWEET_ACTIVE : STYLE_ACTION_IDLE);
+    }
+
+    private void applyLikeStyle(Button button, StoredTweet tweet) {
+        if (tweet.isLikedByCurrentUser()) {
+            button.setText("❤ " + tweet.getLikes());
+            button.setStyle(STYLE_LIKE_ACTIVE);
+        } else {
+            button.setText("♡ " + tweet.getLikes());
+            button.setStyle(STYLE_ACTION_IDLE);
+        }
+    }
+
+    private void applyBookmarkStyle(Button button, StoredTweet tweet) {
+        button.setText("🔖");
+        button.setStyle(tweet.isBookmarked() ? STYLE_BOOKMARK_ACTIVE : STYLE_ACTION_IDLE);
+    }
+
+    private String currentUsername() {
+        String username = UserSession.getInstance().getUsername();
+        return username != null ? username : "developer";
+    }
+
+    private String currentDisplayName() {
+        String displayName = UserSession.getInstance().getDisplayName();
+        return displayName != null ? displayName : "Guest";
     }
 
     @FXML

@@ -52,6 +52,8 @@ public class FeedController {
             "-fx-background-color: transparent; -fx-text-fill: #00ba7c; -fx-padding: 0; -fx-cursor: hand;";
     private static final String STYLE_LIKE_ACTIVE =
             "-fx-background-color: transparent; -fx-text-fill: #f91880; -fx-padding: 0; -fx-cursor: hand;";
+    private static final String STYLE_BOOKMARK_ACTIVE =
+            "-fx-background-color: transparent; -fx-text-fill: #1d9bf0; -fx-padding: 0; -fx-cursor: hand;";
     private static final String STYLE_COMPOSE_AREA =
             "-fx-control-inner-background: #000000; -fx-text-fill: #ffffff; -fx-prompt-text-fill: #71767b; "
                     + "-fx-border-color: #333333; -fx-border-radius: 8; -fx-background-radius: 8;";
@@ -247,7 +249,14 @@ public class FeedController {
                 applyLikeStyle(likeButton, engagementTarget);
             });
 
-            actionToolbar.getChildren().addAll(replyButton, retweetButton, likeButton);
+            Button bookmarkButton = new Button();
+            applyBookmarkStyle(bookmarkButton, engagementTarget);
+            bookmarkButton.setOnAction(event -> {
+                TweetStore.getInstance().toggleBookmark(engagementTarget.getId());
+                applyBookmarkStyle(bookmarkButton, engagementTarget);
+            });
+
+            actionToolbar.getChildren().addAll(replyButton, retweetButton, likeButton, bookmarkButton);
             contentStack.getChildren().add(actionToolbar);
             contentStack.getChildren().add(replyPanel);
         }
@@ -391,6 +400,11 @@ public class FeedController {
             button.setText("♡ " + tweet.getLikes());
             button.setStyle(STYLE_ACTION_IDLE);
         }
+    }
+
+    private void applyBookmarkStyle(Button button, StoredTweet tweet) {
+        button.setText("🔖");
+        button.setStyle(tweet.isBookmarked() ? STYLE_BOOKMARK_ACTIVE : STYLE_ACTION_IDLE);
     }
 
     private String currentUsername() {
