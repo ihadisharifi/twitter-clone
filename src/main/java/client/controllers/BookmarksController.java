@@ -250,34 +250,10 @@ public class BookmarksController {
     private void renderTweetMediaIfPresent(VBox contentStack, StoredTweet tweet) {
         String mediaPath = tweet.getMediaPath();
         if (mediaPath != null && !mediaPath.isBlank()) {
-            try {
-                String uriString;
-                if (mediaPath.startsWith("file:") || mediaPath.startsWith("http:") || mediaPath.startsWith("https:")) {
-                    uriString = mediaPath;
-                } else {
-                    java.io.File file = new java.io.File(mediaPath);
-                    uriString = file.exists() ? file.toURI().toString() : null;
-                }
-
-                if (uriString != null) {
-                    Image mediaImg = new Image(uriString, 420, 260, true, true);
-                    if (!mediaImg.isError()) {
-                        ImageView mediaView = new ImageView(mediaImg);
-                        mediaView.setFitWidth(380);
-                        mediaView.setFitHeight(220);
-                        mediaView.setPreserveRatio(true);
-
-                        javafx.scene.shape.Rectangle clip = new javafx.scene.shape.Rectangle();
-                        clip.setArcWidth(16);
-                        clip.setArcHeight(16);
-                        clip.widthProperty().bind(mediaView.layoutBoundsProperty().map(b -> b.getWidth()));
-                        clip.heightProperty().bind(mediaView.layoutBoundsProperty().map(b -> b.getHeight()));
-                        mediaView.setClip(clip);
-
-                        contentStack.getChildren().add(mediaView);
-                    }
-                }
-            } catch (Exception ignored) {}
+            javafx.scene.Node mediaNode = client.TweetMediaHelper.createMediaNode(mediaPath, 380, 220);
+            if (mediaNode != null) {
+                contentStack.getChildren().add(mediaNode);
+            }
         }
     }
 

@@ -1,16 +1,17 @@
 package client.controllers;
 
 import client.NavigationManager;
+import client.TweetMediaHelper;
 import client.TweetStore;
 import client.UserSession;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
+import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextArea;
-import javafx.scene.image.Image;
-import javafx.scene.image.ImageView;
 import javafx.scene.layout.StackPane;
+import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 
@@ -34,7 +35,7 @@ public class ComposeController {
     private StackPane mediaPreviewContainer;
 
     @FXML
-    private ImageView mediaPreviewImageView;
+    private VBox mediaPreviewBox;
 
     private String selectedMediaPath;
 
@@ -57,24 +58,27 @@ public class ComposeController {
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Attach Media");
         fileChooser.getExtensionFilters().addAll(
-                new FileChooser.ExtensionFilter("Media Files (*.png, *.jpg, *.jpeg, *.webp, *.mp4)", "*.png", "*.jpg", "*.jpeg", "*.webp", "*.mp4"),
-                new FileChooser.ExtensionFilter("Image Files", "*.png", "*.jpg", "*.jpeg", "*.webp"),
-                new FileChooser.ExtensionFilter("Video Files", "*.mp4")
+                new FileChooser.ExtensionFilter("Media Files (*.png, *.jpg, *.jpeg, *.gif, *.mp4, *.m4v)", "*.png", "*.jpg", "*.jpeg", "*.gif", "*.mp4", "*.m4v"),
+                new FileChooser.ExtensionFilter("Image Files", "*.png", "*.jpg", "*.jpeg", "*.gif"),
+                new FileChooser.ExtensionFilter("Video Files", "*.mp4", "*.m4v")
         );
         Stage stage = (Stage) tweetTextArea.getScene().getWindow();
         File file = fileChooser.showOpenDialog(stage);
         if (file != null) {
             selectedMediaPath = file.toURI().toString();
             try {
-                Image img = new Image(selectedMediaPath, 380, 200, true, true);
-                if (!img.isError()) {
-                    if (mediaPreviewImageView != null) {
-                        mediaPreviewImageView.setImage(img);
+                Node previewNode = TweetMediaHelper.createMediaNode(selectedMediaPath, 380, 200);
+                if (previewNode != null) {
+                    if (mediaPreviewBox != null) {
+                        mediaPreviewBox.getChildren().clear();
+                        mediaPreviewBox.getChildren().add(previewNode);
                     }
                     if (mediaPreviewContainer != null) {
                         mediaPreviewContainer.setVisible(true);
                         mediaPreviewContainer.setManaged(true);
                     }
+                } else {
+                    handleRemoveMedia();
                 }
             } catch (Exception e) {
                 handleRemoveMedia();
@@ -85,8 +89,8 @@ public class ComposeController {
     @FXML
     private void handleRemoveMedia() {
         selectedMediaPath = null;
-        if (mediaPreviewImageView != null) {
-            mediaPreviewImageView.setImage(null);
+        if (mediaPreviewBox != null) {
+            mediaPreviewBox.getChildren().clear();
         }
         if (mediaPreviewContainer != null) {
             mediaPreviewContainer.setVisible(false);

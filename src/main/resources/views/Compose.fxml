@@ -50,9 +50,9 @@
                         <TextArea fx:id="tweetTextArea" promptText="What is happening?!" style="-fx-control-inner-background: #000000; -fx-text-fill: #ffffff; -fx-prompt-text-fill: #71767b; -fx-border-color: transparent; -fx-font-size: 16px; -fx-focus-color: transparent; -fx-faint-focus-color: transparent;" wrapText="true" VBox.vgrow="ALWAYS" />
 
                         <!-- Attachment preview container -->
-                        <StackPane fx:id="mediaPreviewContainer" alignment="TOP_RIGHT" maxHeight="200.0" maxWidth="380.0" visible="false" managed="false" style="-fx-background-color: #16181c; -fx-background-radius: 12; -fx-border-color: #333333; -fx-border-radius: 12;">
+                        <StackPane fx:id="mediaPreviewContainer" alignment="TOP_RIGHT" maxHeight="220.0" maxWidth="380.0" visible="false" managed="false" style="-fx-background-color: #16181c; -fx-background-radius: 12; -fx-border-color: #333333; -fx-border-radius: 12;">
                             <children>
-                                <ImageView fx:id="mediaPreviewImageView" fitHeight="200.0" fitWidth="380.0" preserveRatio="true" />
+                                <VBox fx:id="mediaPreviewBox" alignment="CENTER" />
                                 <Button onAction="#handleRemoveMedia" style="-fx-background-color: rgba(15, 20, 25, 0.75); -fx-text-fill: white; -fx-background-radius: 50%; -fx-min-width: 28px; -fx-min-height: 28px; -fx-font-size: 12px; -fx-cursor: hand;" text="✕">
                                     <StackPane.margin>
                                         <Insets right="8.0" top="8.0" />
