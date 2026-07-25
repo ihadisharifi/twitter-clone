@@ -11,21 +11,33 @@ import javafx.animation.Animation;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.fxml.FXML;
+import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
+import javafx.scene.control.ButtonBar;
+import javafx.scene.control.ButtonType;
+import javafx.scene.control.DialogPane;
 import javafx.scene.control.Label;
 import javafx.scene.control.Tooltip;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
+import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
+import javafx.scene.shape.Circle;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
+import javafx.stage.FileChooser;
+import javafx.stage.Stage;
 import javafx.util.Duration;
 
+import java.io.File;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 public class ProfileController {
     @FXML
@@ -51,6 +63,24 @@ public class ProfileController {
 
     @FXML
     private Label drawerUsername;
+
+    @FXML
+    private ImageView avatarImageView;
+
+    @FXML
+    private Circle avatarPlaceholder;
+
+    @FXML
+    private Label avatarPlaceholderIcon;
+
+    @FXML
+    private ImageView bannerImageView;
+
+    @FXML
+    private Region bannerPlaceholder;
+
+    @FXML
+    private StackPane bannerContainer;
 
     private final List<TimestampLabel> liveTimestamps = new ArrayList<>();
     private Timeline timeRefreshTimeline;
@@ -336,5 +366,209 @@ public class ProfileController {
         userTweetsContainer.getChildren().clear();
         liveTimestamps.clear();
         loadUserOwnTweets();
+        loadProfileImages();
+    }
+
+    private void loadProfileImages() {
+        String avatarPath = UserSession.getInstance().getAvatarImagePath();
+        if (avatarPath != null && !avatarPath.isBlank()) {
+            try {
+                String uriString;
+                if (avatarPath.startsWith("file:") || avatarPath.startsWith("http:") || avatarPath.startsWith("https:")) {
+                    uriString = avatarPath;
+                } else {
+                    File file = new File(avatarPath);
+                    uriString = file.exists() ? file.toURI().toString() : null;
+                }
+
+                if (uriString != null) {
+                    Image img = new Image(uriString, 180, 180, false, true);
+                    if (!img.isError()) {
+                        if (avatarImageView != null) {
+                            avatarImageView.setImage(img);
+                            avatarImageView.setFitWidth(90);
+                            avatarImageView.setFitHeight(90);
+                            avatarImageView.setPreserveRatio(false);
+                            Circle clip = new Circle(45, 45, 45);
+                            avatarImageView.setClip(clip);
+                            avatarImageView.setVisible(true);
+                            avatarImageView.setManaged(true);
+                        }
+                        if (avatarPlaceholder != null) avatarPlaceholder.setVisible(false);
+                        if (avatarPlaceholderIcon != null) avatarPlaceholderIcon.setVisible(false);
+                    } else {
+                        resetAvatarUI();
+                    }
+                } else {
+                    resetAvatarUI();
+                }
+            } catch (Exception e) {
+                resetAvatarUI();
+            }
+        } else {
+            resetAvatarUI();
+        }
+
+        String bannerPath = UserSession.getInstance().getBannerImagePath();
+        if (bannerPath != null && !bannerPath.isBlank()) {
+            try {
+                String uriString;
+                if (bannerPath.startsWith("file:") || bannerPath.startsWith("http:") || bannerPath.startsWith("https:")) {
+                    uriString = bannerPath;
+                } else {
+                    File file = new File(bannerPath);
+                    uriString = file.exists() ? file.toURI().toString() : null;
+                }
+
+                if (uriString != null) {
+                    Image img = new Image(uriString, 1200, 300, false, true);
+                    if (!img.isError()) {
+                        if (bannerImageView != null) {
+                            bannerImageView.setImage(img);
+                            bannerImageView.setFitHeight(150);
+                            bannerImageView.setPreserveRatio(false);
+                            bannerImageView.setVisible(true);
+                            bannerImageView.setManaged(true);
+                        }
+                        if (bannerPlaceholder != null) bannerPlaceholder.setVisible(false);
+                    } else {
+                        resetBannerUI();
+                    }
+                } else {
+                    resetBannerUI();
+                }
+            } catch (Exception e) {
+                resetBannerUI();
+            }
+        } else {
+            resetBannerUI();
+        }
+    }
+
+    private void resetAvatarUI() {
+        if (avatarImageView != null) {
+            avatarImageView.setImage(null);
+            avatarImageView.setVisible(false);
+            avatarImageView.setManaged(false);
+        }
+        if (avatarPlaceholder != null) avatarPlaceholder.setVisible(true);
+        if (avatarPlaceholderIcon != null) avatarPlaceholderIcon.setVisible(true);
+    }
+
+    private void resetBannerUI() {
+        if (bannerImageView != null) {
+            bannerImageView.setImage(null);
+            bannerImageView.setVisible(false);
+            bannerImageView.setManaged(false);
+        }
+        if (bannerPlaceholder != null) bannerPlaceholder.setVisible(true);
+    }
+
+    @FXML
+    private void handleAvatarClick() {
+        String currentPath = UserSession.getInstance().getAvatarImagePath();
+        if (currentPath != null && !currentPath.isBlank()) {
+            Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+            alert.setTitle("Profile Photo");
+            alert.setHeaderText("Profile Photo Options");
+            alert.setContentText("Choose an option for your profile photo:");
+
+            ButtonType chooseBtn = new ButtonType("Choose new photo", ButtonBar.ButtonData.OK_DONE);
+            ButtonType removeBtn = new ButtonType("Remove photo", ButtonBar.ButtonData.OTHER);
+            ButtonType cancelBtn = new ButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE);
+
+            alert.getButtonTypes().setAll(chooseBtn, removeBtn, cancelBtn);
+
+            try {
+                DialogPane dialogPane = alert.getDialogPane();
+                if (getClass().getResource("/styles/twitter.css") != null) {
+                    dialogPane.getStylesheets().add(getClass().getResource("/styles/twitter.css").toExternalForm());
+                }
+                dialogPane.setStyle("-fx-background-color: #000000; -fx-border-color: #333333; -fx-border-width: 1px;");
+            } catch (Exception ignored) {}
+
+            Optional<ButtonType> result = alert.showAndWait();
+            if (result.isPresent()) {
+                if (result.get() == chooseBtn) {
+                    chooseNewAvatar();
+                } else if (result.get() == removeBtn) {
+                    UserSession.getInstance().setAvatarImagePath(null);
+                    loadProfileImages();
+                }
+            }
+        } else {
+            chooseNewAvatar();
+        }
+    }
+
+    @FXML
+    private void handleBannerClick() {
+        String currentPath = UserSession.getInstance().getBannerImagePath();
+        if (currentPath != null && !currentPath.isBlank()) {
+            Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+            alert.setTitle("Header Banner");
+            alert.setHeaderText("Header Banner Options");
+            alert.setContentText("Choose an option for your header banner:");
+
+            ButtonType chooseBtn = new ButtonType("Choose new photo", ButtonBar.ButtonData.OK_DONE);
+            ButtonType removeBtn = new ButtonType("Remove photo", ButtonBar.ButtonData.OTHER);
+            ButtonType cancelBtn = new ButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE);
+
+            alert.getButtonTypes().setAll(chooseBtn, removeBtn, cancelBtn);
+
+            try {
+                DialogPane dialogPane = alert.getDialogPane();
+                if (getClass().getResource("/styles/twitter.css") != null) {
+                    dialogPane.getStylesheets().add(getClass().getResource("/styles/twitter.css").toExternalForm());
+                }
+                dialogPane.setStyle("-fx-background-color: #000000; -fx-border-color: #333333; -fx-border-width: 1px;");
+            } catch (Exception ignored) {}
+
+            Optional<ButtonType> result = alert.showAndWait();
+            if (result.isPresent()) {
+                if (result.get() == chooseBtn) {
+                    chooseNewBanner();
+                } else if (result.get() == removeBtn) {
+                    UserSession.getInstance().setBannerImagePath(null);
+                    loadProfileImages();
+                }
+            }
+        } else {
+            chooseNewBanner();
+        }
+    }
+
+    private void chooseNewAvatar() {
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Select Profile Avatar");
+        fileChooser.getExtensionFilters().addAll(
+                new FileChooser.ExtensionFilter("Image Files (*.png, *.jpg, *.jpeg, *.webp)", "*.png", "*.jpg", "*.jpeg", "*.webp"),
+                new FileChooser.ExtensionFilter("PNG Files", "*.png"),
+                new FileChooser.ExtensionFilter("JPG Files", "*.jpg", "*.jpeg"),
+                new FileChooser.ExtensionFilter("WebP Files", "*.webp")
+        );
+        Stage stage = (Stage) nameLabel.getScene().getWindow();
+        File file = fileChooser.showOpenDialog(stage);
+        if (file != null) {
+            UserSession.getInstance().setAvatarImagePath(file.toURI().toString());
+            loadProfileImages();
+        }
+    }
+
+    private void chooseNewBanner() {
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Select Header Banner");
+        fileChooser.getExtensionFilters().addAll(
+                new FileChooser.ExtensionFilter("Image Files (*.png, *.jpg, *.jpeg, *.webp)", "*.png", "*.jpg", "*.jpeg", "*.webp"),
+                new FileChooser.ExtensionFilter("PNG Files", "*.png"),
+                new FileChooser.ExtensionFilter("JPG Files", "*.jpg", "*.jpeg"),
+                new FileChooser.ExtensionFilter("WebP Files", "*.webp")
+        );
+        Stage stage = (Stage) nameLabel.getScene().getWindow();
+        File file = fileChooser.showOpenDialog(stage);
+        if (file != null) {
+            UserSession.getInstance().setBannerImagePath(file.toURI().toString());
+            loadProfileImages();
+        }
     }
 }

@@ -8,6 +8,9 @@ public class UserSession {
     private User currentUser;
     private Session currentSession;
 
+    private String avatarImagePath;
+    private String bannerImagePath;
+
     private UserSession() {}
 
     /**
@@ -41,6 +44,36 @@ public class UserSession {
         }
         this.currentUser = null;
         this.currentSession = null;
+        this.avatarImagePath = null;
+        this.bannerImagePath = null;
+    }
+
+    public String getAvatarImagePath() {
+        if (avatarImagePath != null) {
+            return avatarImagePath;
+        }
+        return currentUser != null ? currentUser.getAvatarUrl() : null;
+    }
+
+    public void setAvatarImagePath(String path) {
+        this.avatarImagePath = path;
+        if (currentUser != null) {
+            currentUser.setAvatarUrl(path);
+        }
+    }
+
+    public String getBannerImagePath() {
+        if (bannerImagePath != null) {
+            return bannerImagePath;
+        }
+        return currentUser != null ? currentUser.getBannerUrl() : null;
+    }
+
+    public void setBannerImagePath(String path) {
+        this.bannerImagePath = path;
+        if (currentUser != null) {
+            currentUser.setBannerUrl(path);
+        }
     }
 
     // Helper utilities to cleanly request fields across FX controllers
