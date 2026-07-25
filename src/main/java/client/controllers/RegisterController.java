@@ -1,12 +1,19 @@
 package client.controllers;
 
 import client.NavigationManager;
+import client.UserSession;
 import client.network.ServerConnection;
+import com.google.gson.Gson;
 import com.google.gson.JsonObject;
+import javafx.application.Platform;
+import javafx.concurrent.Task;
 import javafx.fxml.FXML;
+import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
+import shared.models.Session;
+import shared.models.User;
 import shared.protocol.Request;
 import shared.protocol.RequestType;
 import shared.protocol.Response;
@@ -29,94 +36,124 @@ public class RegisterController {
     private PasswordField passwordField;
 
     @FXML
+    private Button registerButton;
+
+    @FXML
     private Label errorLabel;
 
-    // Isolated network connection context for this screen
-    private final ServerConnection connection = new ServerConnection();
+    private final ServerConnection connection = ServerConnection.getInstance();
+    private final Gson gson = new Gson();
 
-    /**
-     * Extracts inputs, packs them into a standard JSON payload, and requests remote account creation.
-     */
     @FXML
-    private void handleRegister() {
-        String displayName = displayNameField.getText().trim();
-        String username = usernameField.getText().trim();
-        String email = emailField.getText().trim();
-        String password = passwordField.getText();
-
-        // Client-side structural integrity check (Keeps faults isolated to client)
-        if (displayName.isEmpty() || username.isEmpty() || email.isEmpty() || password.isEmpty()) {
-            errorLabel.setText("Please populate all fields before proceeding.");
-            return;
-        }
-
-        // ----------------------------------------------------------------------
-        // DEVELOPMENT MOCK BYPASS: Active for offline visual compilation tasks
-        // ----------------------------------------------------------------------
-        System.out.println("Registration bypass: Staging session context tracking...");
-
-        // FIXED: Using real inputs from text fields instead of hardcoded strings
-        shared.models.User mockUser = new shared.models.User(2, username, email, displayName, "Hello 𝕏!", null, null, "2026-07-16");
-        shared.models.Session mockSession = new shared.models.Session(102, 2, "MOCK_JWT_TOKEN_67890", "2026-12-31");
-
-        // Staging user credentials instantly inside the active UI memory channel
-        client.UserSession.getInstance().startSession(mockUser, mockSession);
-
-        NavigationManager.switchScene("/views/Feed.fxml");
-        if (true) return;
-        // ----------------------------------------------------------------------
-
+    public void initialize() {
         try {
-            // Package registration data into a uniform JSON object payload
-            JsonObject registerPayload = new JsonObject();
-            registerPayload.addProperty("displayName", displayName);
-            registerPayload.addProperty("username", username);
-            registerPayload.addProperty("email", email);
-            registerPayload.addProperty("password", password);
-
-            // Wrap inside the unified architecture Request object
-            String uniqueId = UUID.randomUUID().toString();
-            Request registerRequest = new Request(uniqueId, RequestType.REGISTER, registerPayload);
-
-            // Establish standard connection bridge
             connection.connect();
-
-            // Dispatch request through the client connection pipeline
-            Response response = connection.sendMessage(registerRequest);
-
-            // Process standard response status codes from network protocol
-            if (response != null) {
-                if (response.getStatus() == StatusCode.OK) {
-                    errorLabel.setStyle("-fx-text-fill: #00ba7c;");
-                    errorLabel.setText("Account created successfully! Welcome ...");
-                    // Reroute to login context so user can authenticate
-                    NavigationManager.switchScene("/views/Feed.fxml");
-                }
-                else if (response.getStatus() == StatusCode.BAD_REQUEST) {
-                    errorLabel.setText("Registration rejected: Username or email already exists.");
-                }
-                else {
-                    errorLabel.setText("System status code: " + response.getStatus());
-                }
-            }
-
-        }
-        catch (Exception e) {
-            // If server is not running or network fails, display a generic message to user
-            errorLabel.setText("Network transmission offline. Local simulation active.");
-            System.out.println("Network info: Server response handler might be pending or offline.");
-        }
-        finally {
-            try {
-                connection.disconnect();
-            }
-            catch (Exception ignored) {}
+        } catch (Exception e) {
+            errorLabel.setStyle("-fx-text-fill: #f4212e;");
+            errorLabel.setText("Network Error: Could not connect to backend server.");
         }
     }
 
-    /**
-     * Reroutes view state contexts backward into the Authentication (Login) UI stage tree.
-     */
+    @FXML
+    private void handleRegister() {
+        String displayName = displayNameField.getText() == null ? "" : displayNameField.getText().trim();
+        String username = usernameField.getText() == null ? "" : usernameField.getText().trim();
+        String email = emailField.getText() == null ? "" : emailField.getText().trim();
+        String password = passwordField.getText() == null ? "" : passwordField.getText();
+
+        if (displayName.isEmpty() || username.isEmpty() || email.isEmpty() || password.isEmpty()) {
+            showError("Please populate all fields before proceeding.");
+            return;
+        }
+
+        if (password.length() < 8) {
+            showError("Password must be at least 8 characters.");
+            return;
+        }
+
+        if (!connection.isConnected()) {
+            try {
+                connection.connect();
+            } catch (Exception e) {
+                showError("Network Error: Could not connect to backend server.");
+                return;
+            }
+        }
+
+        JsonObject registerPayload = new JsonObject();
+        registerPayload.addProperty("displayName", displayName);
+        registerPayload.addProperty("username", username);
+        registerPayload.addProperty("email", email);
+        registerPayload.addProperty("password", password);
+
+        Request registerRequest = new Request(UUID.randomUUID().toString(), RequestType.REGISTER, registerPayload);
+
+        if (registerButton != null) {
+            registerButton.setDisable(true);
+        }
+        errorLabel.setStyle("-fx-text-fill: #71767b;");
+        errorLabel.setText("Creating account...");
+
+        Task<Response> task = new Task<>() {
+            @Override
+            protected Response call() throws Exception {
+                return connection.sendMessage(registerRequest);
+            }
+        };
+
+        task.setOnSucceeded(e -> {
+            if (registerButton != null) {
+                registerButton.setDisable(false);
+            }
+            handleRegisterResponse(task.getValue());
+        });
+
+        task.setOnFailed(e -> {
+            if (registerButton != null) {
+                registerButton.setDisable(false);
+            }
+            Throwable ex = task.getException();
+            showError("Network transmission failed: " + (ex != null ? ex.getMessage() : "unknown error"));
+        });
+
+        Thread thread = new Thread(task, "register-request");
+        thread.setDaemon(true);
+        thread.start();
+    }
+
+    private void handleRegisterResponse(Response response) {
+        if (response == null) {
+            showError("No response from server.");
+            return;
+        }
+
+        if (response.getStatus() == StatusCode.OK) {
+            JsonObject result = response.getPayload().getAsJsonObject();
+            User user = gson.fromJson(result.get("user"), User.class);
+            String token = result.get("token").getAsString();
+            Session session = new Session(0, user.getId(), token, null);
+
+            UserSession.getInstance().startSession(user, session);
+
+            errorLabel.setStyle("-fx-text-fill: #00ba7c;");
+            errorLabel.setText("Account created successfully! Welcome, " + user.getDisplayName() + "!");
+            NavigationManager.switchScene("/views/Feed.fxml");
+        } else if (response.getStatus() == StatusCode.CONFLICT) {
+            showError("Username or email already exists.");
+        } else if (response.getStatus() == StatusCode.BAD_REQUEST) {
+            showError(response.getMessage() != null ? response.getMessage() : "Invalid registration details.");
+        } else {
+            showError("Server error: " + response.getMessage());
+        }
+    }
+
+    private void showError(String message) {
+        Platform.runLater(() -> {
+            errorLabel.setStyle("-fx-text-fill: #f4212e;");
+            errorLabel.setText(message);
+        });
+    }
+
     @FXML
     private void handleBackToLogin() {
         NavigationManager.switchScene("/views/Login.fxml");
