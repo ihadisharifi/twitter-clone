@@ -1,5 +1,6 @@
 package client.controllers;
 
+import client.EmojiPickerHelper;
 import client.NavigationManager;
 import client.TweetMediaHelper;
 import client.TweetStore;
@@ -32,6 +33,9 @@ public class ComposeController {
     private Label avatarLabel;
 
     @FXML
+    private Button emojiButton;
+
+    @FXML
     private StackPane mediaPreviewContainer;
 
     @FXML
@@ -51,6 +55,11 @@ public class ComposeController {
     @FXML
     private void handleCancel() {
         NavigationManager.switchScene("/views/Feed.fxml");
+    }
+
+    @FXML
+    private void handleEmojiClick() {
+        EmojiPickerHelper.showEmojiPicker(emojiButton, tweetTextArea);
     }
 
     @FXML

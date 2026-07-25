@@ -175,15 +175,6 @@ public class ProfileController {
             repostLabel.setFont(Font.font("System", 13));
             card.getChildren().add(repostLabel);
         }
-        else if (tweet.isReply()) {
-            String replyTo = tweet.getOriginalAuthorUsername() != null
-                    ? "@" + tweet.getOriginalAuthorUsername()
-                    : "someone";
-            Label replyLabel = new Label("💬 Replying to " + replyTo);
-            replyLabel.setTextFill(Color.web("#1d9bf0"));
-            replyLabel.setFont(Font.font("System", 13));
-            card.getChildren().add(replyLabel);
-        }
 
         HBox tweetRow = new HBox(12);
 
@@ -247,6 +238,24 @@ public class ProfileController {
         bodyText.setWrapText(true);
         bodyText.setMaxWidth(420);
 
+        contentStack.getChildren().add(headerRow);
+
+        if (tweet.isReply()) {
+            String replyTo = tweet.getOriginalAuthorUsername() != null
+                    ? "@" + tweet.getOriginalAuthorUsername()
+                    : "someone";
+            Label replyHeaderLabel = new Label("Replying to " + replyTo);
+            replyHeaderLabel.setTextFill(Color.web("#1d9bf0"));
+            replyHeaderLabel.setFont(Font.font("System", 13));
+            replyHeaderLabel.setStyle("-fx-padding: 2 0 4 0;");
+
+            VBox parentRefBox = createParentTweetRefBox(tweet);
+
+            contentStack.getChildren().addAll(replyHeaderLabel, parentRefBox);
+        }
+
+        contentStack.getChildren().add(bodyText);
+
         HBox actionToolbar = new HBox(40);
         actionToolbar.setStyle("-fx-padding: 6 0 0 0;");
 
@@ -300,13 +309,91 @@ public class ProfileController {
             actionToolbar.getChildren().addAll(replyButton, retweetButton, likeButton, bookmarkButton);
         }
 
-        contentStack.getChildren().addAll(headerRow, bodyText);
         renderTweetMediaIfPresent(contentStack, tweet);
         contentStack.getChildren().addAll(actionToolbar, replyPanel);
         tweetRow.getChildren().addAll(avatarBox, contentStack);
         card.getChildren().add(tweetRow);
 
         userTweetsContainer.getChildren().add(card);
+    }
+
+    private VBox createParentTweetRefBox(StoredTweet tweet) {
+        VBox refBox = new VBox(4);
+        refBox.setMaxWidth(420);
+        refBox.setStyle(
+                "-fx-background-color: #16181c; " +
+                "-fx-border-color: #333333; " +
+                "-fx-border-radius: 10; " +
+                "-fx-background-radius: 10; " +
+                "-fx-padding: 8 12 8 12; " +
+                "-fx-cursor: hand;"
+        );
+
+        StoredTweet parentTweet = tweet.getReplyToId() != null
+                ? TweetStore.getInstance().findById(tweet.getReplyToId())
+                : null;
+
+        String authorName = parentTweet != null ? parentTweet.getAuthorDisplayName() : tweet.getOriginalAuthorDisplayName();
+        String authorHandle = parentTweet != null ? parentTweet.getAuthorUsername() : tweet.getOriginalAuthorUsername();
+        String parentContent = parentTweet != null ? parentTweet.getContent() : "Original post context";
+        String parentMedia = parentTweet != null ? parentTweet.getMediaPath() : null;
+
+        if (authorName == null || authorName.isBlank()) authorName = "User";
+        if (authorHandle == null || authorHandle.isBlank()) authorHandle = "user";
+
+        HBox authorLine = new HBox(6);
+        Label nameLbl = new Label(authorName);
+        nameLbl.setTextFill(Color.web("#e7e9ea"));
+        nameLbl.setFont(Font.font("System", FontWeight.BOLD, 13));
+
+        Label handleLbl = new Label("@" + authorHandle);
+        handleLbl.setTextFill(Color.web("#71767b"));
+        handleLbl.setFont(Font.font("System", 13));
+
+        authorLine.getChildren().addAll(nameLbl, handleLbl);
+
+        String previewText = parentContent;
+        if (previewText.length() > 110) {
+            previewText = previewText.substring(0, 107) + "...";
+        }
+        Label textLbl = new Label(previewText);
+        textLbl.setTextFill(Color.web("#71767b"));
+        textLbl.setFont(Font.font("System", 13));
+        textLbl.setWrapText(true);
+
+        refBox.getChildren().addAll(authorLine, textLbl);
+
+        if (parentMedia != null && !parentMedia.isBlank()) {
+            String indicatorText = TweetMediaHelper.isVideoPath(parentMedia) ? "🎥 Video attached" : "📷 Photo attached";
+            Label mediaLbl = new Label(indicatorText);
+            mediaLbl.setTextFill(Color.web("#1d9bf0"));
+            mediaLbl.setFont(Font.font("System", 12));
+            refBox.getChildren().add(mediaLbl);
+        }
+
+        refBox.setOnMouseEntered(e -> refBox.setStyle(
+                "-fx-background-color: #1c1f23; " +
+                "-fx-border-color: #1d9bf0; " +
+                "-fx-border-radius: 10; " +
+                "-fx-background-radius: 10; " +
+                "-fx-padding: 8 12 8 12; " +
+                "-fx-cursor: hand;"
+        ));
+        refBox.setOnMouseExited(e -> refBox.setStyle(
+                "-fx-background-color: #16181c; " +
+                "-fx-border-color: #333333; " +
+                "-fx-border-radius: 10; " +
+                "-fx-background-radius: 10; " +
+                "-fx-padding: 8 12 8 12; " +
+                "-fx-cursor: hand;"
+        ));
+
+        refBox.setOnMouseClicked(e -> {
+            e.consume();
+            NavigationManager.switchScene("/views/Feed.fxml");
+        });
+
+        return refBox;
     }
 
     private StoredTweet engagementTarget(StoredTweet tweet) {
@@ -435,6 +522,10 @@ public class ProfileController {
             }
         });
 
+        Button emojiBtn = new Button("😊");
+        emojiBtn.setStyle("-fx-background-color: transparent; -fx-text-fill: #1d9bf0; -fx-font-size: 16px; -fx-padding: 4; -fx-cursor: hand;");
+        emojiBtn.setOnAction(e -> client.EmojiPickerHelper.showEmojiPicker(emojiBtn, replyInput));
+
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
 
@@ -456,7 +547,7 @@ public class ProfileController {
             rebuildReplyPanel(replyPanel, parent, replyButton);
         });
 
-        replyActions.getChildren().addAll(attachMediaBtn, spacer, sendReply);
+        replyActions.getChildren().addAll(attachMediaBtn, emojiBtn, spacer, sendReply);
 
         replyPanel.getChildren().addAll(replyInput, replyMediaPreviewContainer, replyActions);
     }
@@ -500,6 +591,55 @@ public class ProfileController {
                 node.getChildren().add(mediaNode);
             }
         }
+
+        // Action Toolbar for Nested Reply (4 Buttons: Reply, Retweet, Like, Bookmark)
+        HBox actionToolbar = new HBox(30);
+        actionToolbar.setStyle("-fx-padding: 4 0 0 0;");
+
+        VBox replyPanel = new VBox(8);
+        replyPanel.setVisible(false);
+        replyPanel.setManaged(false);
+        replyPanel.setStyle("-fx-padding: 6 0 0 0;");
+
+        Button replyBtn = new Button();
+        applyReplyStyle(replyBtn, reply);
+        replyBtn.setOnAction(event -> {
+            boolean open = !replyPanel.isVisible();
+            replyPanel.setVisible(open);
+            replyPanel.setManaged(open);
+            if (open) {
+                rebuildReplyPanel(replyPanel, reply, replyBtn);
+            }
+        });
+
+        Button retweetBtn = new Button();
+        applyRetweetStyle(retweetBtn, reply);
+        retweetBtn.setOnAction(event -> {
+            TweetStore.getInstance().toggleRetweet(
+                    reply.getId(),
+                    currentUsername(),
+                    currentDisplayName()
+            );
+            refreshProfileData();
+        });
+
+        Button likeBtn = new Button();
+        applyLikeStyle(likeBtn, reply);
+        likeBtn.setOnAction(event -> {
+            TweetStore.getInstance().toggleLike(reply.getId());
+            applyLikeStyle(likeBtn, reply);
+        });
+
+        Button bookmarkBtn = new Button();
+        applyBookmarkStyle(bookmarkBtn, reply);
+        bookmarkBtn.setOnAction(event -> {
+            TweetStore.getInstance().toggleBookmark(reply.getId());
+            applyBookmarkStyle(bookmarkBtn, reply);
+        });
+
+        actionToolbar.getChildren().addAll(replyBtn, retweetBtn, likeBtn, bookmarkBtn);
+        node.getChildren().addAll(actionToolbar, replyPanel);
+
         return node;
     }
 

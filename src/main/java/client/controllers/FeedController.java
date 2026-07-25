@@ -360,6 +360,10 @@ public class FeedController {
             }
         });
 
+        Button emojiBtn = new Button("😊");
+        emojiBtn.setStyle("-fx-background-color: transparent; -fx-text-fill: #1d9bf0; -fx-font-size: 16px; -fx-padding: 4; -fx-cursor: hand;");
+        emojiBtn.setOnAction(e -> client.EmojiPickerHelper.showEmojiPicker(emojiBtn, replyInput));
+
         javafx.scene.layout.Region spacer = new javafx.scene.layout.Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
 
@@ -381,7 +385,7 @@ public class FeedController {
             rebuildReplyPanel(replyPanel, parent, replyButton);
         });
 
-        replyActions.getChildren().addAll(attachMediaBtn, spacer, sendReply);
+        replyActions.getChildren().addAll(attachMediaBtn, emojiBtn, spacer, sendReply);
 
         replyPanel.getChildren().addAll(replyInput, replyMediaPreviewContainer, replyActions);
     }
@@ -426,6 +430,55 @@ public class FeedController {
                 node.getChildren().add(mediaNode);
             }
         }
+
+        // Action Toolbar for Nested Reply (4 Buttons: Reply, Retweet, Like, Bookmark)
+        HBox actionToolbar = new HBox(30);
+        actionToolbar.setStyle("-fx-padding: 4 0 0 0;");
+
+        VBox replyPanel = new VBox(8);
+        replyPanel.setVisible(false);
+        replyPanel.setManaged(false);
+        replyPanel.setStyle("-fx-padding: 6 0 0 0;");
+
+        Button replyBtn = new Button();
+        applyReplyStyle(replyBtn, reply);
+        replyBtn.setOnAction(event -> {
+            boolean open = !replyPanel.isVisible();
+            replyPanel.setVisible(open);
+            replyPanel.setManaged(open);
+            if (open) {
+                rebuildReplyPanel(replyPanel, reply, replyBtn);
+            }
+        });
+
+        Button retweetBtn = new Button();
+        applyRetweetStyle(retweetBtn, reply);
+        retweetBtn.setOnAction(event -> {
+            TweetStore.getInstance().toggleRetweet(
+                    reply.getId(),
+                    currentUsername(),
+                    currentDisplayName()
+            );
+            loadTimeline();
+        });
+
+        Button likeBtn = new Button();
+        applyLikeStyle(likeBtn, reply);
+        likeBtn.setOnAction(event -> {
+            TweetStore.getInstance().toggleLike(reply.getId());
+            applyLikeStyle(likeBtn, reply);
+        });
+
+        Button bookmarkBtn = new Button();
+        applyBookmarkStyle(bookmarkBtn, reply);
+        bookmarkBtn.setOnAction(event -> {
+            TweetStore.getInstance().toggleBookmark(reply.getId());
+            applyBookmarkStyle(bookmarkBtn, reply);
+        });
+
+        actionToolbar.getChildren().addAll(replyBtn, retweetBtn, likeBtn, bookmarkBtn);
+        node.getChildren().addAll(actionToolbar, replyPanel);
+
         return node;
     }
 
