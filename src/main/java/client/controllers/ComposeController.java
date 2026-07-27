@@ -3,11 +3,16 @@ package client.controllers;
 import client.EmojiPickerHelper;
 import client.NavigationManager;
 import client.TweetMediaHelper;
-import client.TweetStore;
 import client.UserSession;
+import client.network.ServerConnection;
+import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
 import javafx.application.Platform;
+import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.scene.Node;
+import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextArea;
@@ -15,33 +20,28 @@ import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
+import shared.protocol.Request;
+import shared.protocol.RequestType;
+import shared.protocol.Response;
+import shared.protocol.StatusCode;
 
 import java.io.File;
+import java.util.UUID;
 
 public class ComposeController {
 
-    @FXML
-    private TextArea tweetTextArea;
-
-    @FXML
-    private Button cancelButton;
-
-    @FXML
-    private Button postButton;
-
-    @FXML
-    private Label avatarLabel;
-
-    @FXML
-    private Button emojiButton;
-
-    @FXML
-    private StackPane mediaPreviewContainer;
-
-    @FXML
-    private VBox mediaPreviewBox;
+    @FXML private TextArea tweetTextArea;
+    @FXML private Button cancelButton;
+    @FXML private Button postButton;
+    @FXML private Label avatarLabel;
+    @FXML private Button emojiButton;
+    @FXML private StackPane mediaPreviewContainer;
+    @FXML private VBox mediaPreviewBox;
 
     private String selectedMediaPath;
+
+    private final Gson gson = new Gson();
+    private final ServerConnection connection = ServerConnection.getInstance();
 
     @FXML
     public void initialize() {
@@ -78,14 +78,9 @@ public class ComposeController {
             try {
                 Node previewNode = TweetMediaHelper.createMediaNode(selectedMediaPath, 380, 200);
                 if (previewNode != null) {
-                    if (mediaPreviewBox != null) {
-                        mediaPreviewBox.getChildren().clear();
-                        mediaPreviewBox.getChildren().add(previewNode);
-                    }
-                    if (mediaPreviewContainer != null) {
-                        mediaPreviewContainer.setVisible(true);
-                        mediaPreviewContainer.setManaged(true);
-                    }
+                    mediaPreviewBox.getChildren().setAll(previewNode);
+                    mediaPreviewContainer.setVisible(true);
+                    mediaPreviewContainer.setManaged(true);
                 } else {
                     handleRemoveMedia();
                 }
@@ -113,22 +108,64 @@ public class ComposeController {
             return;
         }
 
-        String content = tweetTextArea.getText().trim();
+        String content = tweetTextArea.getText() == null ? "" : tweetTextArea.getText().trim();
         if (content.isEmpty() && selectedMediaPath == null) {
             return;
         }
 
-        String username = UserSession.getInstance().getUsername();
-        if (username == null || username.isBlank()) {
-            username = "developer";
-        }
+        String mediaPathToSend = selectedMediaPath;
 
-        String displayName = UserSession.getInstance().getDisplayName();
-        if (displayName == null || displayName.isBlank()) {
-            displayName = "Guest";
-        }
+        postButton.setDisable(true);
 
-        TweetStore.getInstance().addTweet(content, username, displayName, selectedMediaPath);
-        NavigationManager.switchScene("/views/Feed.fxml");
+        Task<Void> task = new Task<>() {
+            @Override
+            protected Void call() throws Exception {
+                if (!connection.isConnected()) {
+                    connection.connect();
+                }
+
+                JsonObject body = new JsonObject();
+                String token = UserSession.getInstance().getToken();
+                if (token != null) {
+                    body.addProperty("token", token);
+                }
+                body.addProperty("content", content);
+                if (mediaPathToSend != null) {
+                    JsonArray mediaUrls = new JsonArray();
+                    mediaUrls.add(mediaPathToSend);
+                    body.add("mediaUrls", mediaUrls);
+                }
+
+                Request request = new Request(UUID.randomUUID().toString(), RequestType.CREATE_TWEET, body);
+                Response response = connection.sendMessage(request);
+                if (response.getStatus() != StatusCode.OK) {
+                    throw new Exception(response.getMessage() != null ? response.getMessage() : "Failed to post tweet.");
+                }
+                return null;
+            }
+        };
+
+        task.setOnSucceeded(e -> {
+            postButton.setDisable(false);
+            NavigationManager.switchScene("/views/Feed.fxml");
+        });
+
+        task.setOnFailed(e -> {
+            postButton.setDisable(false);
+            Throwable ex = task.getException();
+            showError(ex != null ? ex.getMessage() : "Failed to post tweet.");
+        });
+
+        Thread thread = new Thread(task, "create-tweet");
+        thread.setDaemon(true);
+        thread.start();
+    }
+
+    private void showError(String message) {
+        Platform.runLater(() -> {
+            Alert alert = new Alert(Alert.AlertType.ERROR, message);
+            alert.setHeaderText("Couldn't post tweet");
+            alert.showAndWait();
+        });
     }
 }
