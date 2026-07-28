@@ -91,6 +91,8 @@
                                                         </StackPane>
                                                     </children>
                                                 </StackPane>
+                                                <Region HBox.hgrow="ALWAYS" />
+                                                <Button fx:id="followButton" managed="false" onAction="#handleFollowToggle" text="Follow" visible="false" />
                                             </children>
                                         </HBox>
 
@@ -109,7 +111,7 @@
                                             </children>
                                         </VBox>
 
-                                        <Label fx:id="bioLabel" text="sample Bio!" textFill="WHITE" wrapText="true">
+                                        <Label fx:id="bioLabel" text="" textFill="WHITE" wrapText="true">
                                             <font>
                                                 <Font size="14.0" />
                                             </font>
@@ -117,15 +119,15 @@
 
                                         <HBox spacing="20.0" style="-fx-padding: 5 0 0 0;">
                                             <children>
-                                                <HBox spacing="4.0">
+                                                <HBox onMouseClicked="#handleShowFollowing" spacing="4.0" style="-fx-cursor: hand;">
                                                     <children>
-                                                        <Label style="-fx-font-weight: bold;" text="145" textFill="WHITE" />
+                                                        <Label fx:id="followingCountLabel" style="-fx-font-weight: bold;" text="0" textFill="WHITE" />
                                                         <Label text="Following" textFill="#71767b" />
                                                     </children>
                                                 </HBox>
-                                                <HBox spacing="4.0">
+                                                <HBox onMouseClicked="#handleShowFollowers" spacing="4.0" style="-fx-cursor: hand;">
                                                     <children>
-                                                        <Label style="-fx-font-weight: bold;" text="892" textFill="WHITE" />
+                                                        <Label fx:id="followersCountLabel" style="-fx-font-weight: bold;" text="0" textFill="WHITE" />
                                                         <Label text="Followers" textFill="#71767b" />
                                                     </children>
                                                 </HBox>
@@ -205,13 +207,13 @@
                                     <children>
                                         <HBox spacing="4.0">
                                             <children>
-                                                <Label fx:id="drawerFollowingCount" styleClass="drawer-stat-count" text="145" />
+                                                <Label fx:id="drawerFollowingCount" styleClass="drawer-stat-count" text="0" />
                                                 <Label styleClass="drawer-stat-label" text="Following" />
                                             </children>
                                         </HBox>
                                         <HBox spacing="4.0">
                                             <children>
-                                                <Label fx:id="drawerFollowersCount" styleClass="drawer-stat-count" text="892" />
+                                                <Label fx:id="drawerFollowersCount" styleClass="drawer-stat-count" text="0" />
                                                 <Label styleClass="drawer-stat-label" text="Followers" />
                                             </children>
                                         </HBox>
