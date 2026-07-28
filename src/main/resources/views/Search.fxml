@@ -5,6 +5,7 @@
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.control.TextField?>
+<?import javafx.scene.image.ImageView?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.StackPane?>
@@ -31,8 +32,9 @@
                                     <graphic>
                                         <StackPane>
                                             <children>
-                                                <Circle fill="#262626" radius="16.0" stroke="#333333" strokeWidth="1.0" />
-                                                <Label style="-fx-text-fill: #71767b; -fx-font-size: 14;" text="👤" />
+                                                <Circle fx:id="topAvatarPlaceholder" fill="#262626" radius="16.0" stroke="#333333" strokeWidth="1.0" />
+                                                <Label fx:id="topAvatarPlaceholderIcon" style="-fx-text-fill: #71767b; -fx-font-size: 14;" text="👤" />
+                                                <ImageView fx:id="topAvatarImage" fitHeight="32.0" fitWidth="32.0" managed="false" preserveRatio="false" visible="false" />
                                             </children>
                                         </StackPane>
                                     </graphic>
@@ -108,8 +110,9 @@
                             <children>
                                 <StackPane alignment="CENTER_LEFT" prefHeight="48.0">
                                     <children>
-                                        <Circle fill="#262626" radius="24.0" stroke="#333333" strokeWidth="1.0" />
-                                        <Label style="-fx-text-fill: #71767b; -fx-font-size: 22;" text="👤" />
+                                        <Circle fx:id="drawerAvatarPlaceholder" fill="#262626" radius="24.0" stroke="#333333" strokeWidth="1.0" />
+                                        <Label fx:id="drawerAvatarPlaceholderIcon" style="-fx-text-fill: #71767b; -fx-font-size: 22;" text="👤" />
+                                        <ImageView fx:id="drawerAvatarImage" fitHeight="48.0" fitWidth="48.0" managed="false" preserveRatio="false" visible="false" />
                                     </children>
                                 </StackPane>
                                 <Label fx:id="drawerDisplayName" styleClass="drawer-display-name" text="User">
@@ -126,13 +129,13 @@
                                     <children>
                                         <HBox spacing="4.0">
                                             <children>
-                                                <Label fx:id="drawerFollowingCount" styleClass="drawer-stat-count" text="145" />
+                                                <Label fx:id="drawerFollowingCount" styleClass="drawer-stat-count" text="0" />
                                                 <Label styleClass="drawer-stat-label" text="Following" />
                                             </children>
                                         </HBox>
                                         <HBox spacing="4.0">
                                             <children>
-                                                <Label fx:id="drawerFollowersCount" styleClass="drawer-stat-count" text="892" />
+                                                <Label fx:id="drawerFollowersCount" styleClass="drawer-stat-count" text="0" />
                                                 <Label styleClass="drawer-stat-label" text="Followers" />
                                             </children>
                                         </HBox>

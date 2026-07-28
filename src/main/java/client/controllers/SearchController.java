@@ -6,8 +6,10 @@ import client.SideDrawerHelper;
 import client.TweetMediaHelper;
 import client.TweetTimeFormatter;
 import client.UserSession;
+import client.UserAvatarHelper;
 import client.network.ServerConnection;
 import com.google.gson.Gson;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import javafx.animation.PauseTransition;
 import javafx.concurrent.Task;
@@ -15,10 +17,13 @@ import javafx.fxml.FXML;
 import javafx.scene.Node;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
+import javafx.scene.shape.Circle;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.util.Duration;
@@ -44,6 +49,14 @@ public class SearchController {
     @FXML private VBox drawerPanel;
     @FXML private Label drawerDisplayName;
     @FXML private Label drawerUsername;
+    @FXML private Label drawerFollowingCount;
+    @FXML private Label drawerFollowersCount;
+    @FXML private ImageView drawerAvatarImage;
+    @FXML private Circle drawerAvatarPlaceholder;
+    @FXML private Label drawerAvatarPlaceholderIcon;
+    @FXML private ImageView topAvatarImage;
+    @FXML private Circle topAvatarPlaceholder;
+    @FXML private Label topAvatarPlaceholderIcon;
 
     private final Gson gson = new Gson();
     private final ServerConnection connection = ServerConnection.getInstance();
@@ -54,6 +67,7 @@ public class SearchController {
     @FXML
     public void initialize() {
         SideDrawerHelper.populateUserHeader(drawerDisplayName, drawerUsername);
+        loadDrawerProfile();
 
         searchDelay.setOnFinished(event -> search(searchInputField.getText()));
         searchInputField.textProperty().addListener((observable, oldValue, newValue) ->
@@ -120,6 +134,15 @@ public class SearchController {
                 for (User user : users) {
                     usersById.put(user.getId(), user);
                 }
+                if (!tweets.isEmpty()) {
+                    for (User user : searchUsers("%")) {
+                        usersById.put(user.getId(), user);
+                    }
+                }
+                User current = UserSession.getInstance().getCurrentUser();
+                if (current != null) {
+                    usersById.put(current.getId(), current);
+                }
 
                 return new SearchResults(users, tweets, usersById);
             }
@@ -181,8 +204,7 @@ public class SearchController {
                         "-fx-cursor: hand;"
         );
 
-        Label avatar = new Label("👤");
-        avatar.setFont(Font.font(22));
+        Node avatar = UserAvatarHelper.create(user, 42);
 
         VBox text = new VBox(2);
         HBox.setHgrow(text, Priority.ALWAYS);
@@ -220,6 +242,15 @@ public class SearchController {
                         "-fx-padding: 12 16;"
         );
 
+        HBox tweetRow = new HBox(12);
+        User avatarUser = author;
+        User current = UserSession.getInstance().getCurrentUser();
+        if (avatarUser == null && current != null && current.getId() == tweet.getAuthorId()) {
+            avatarUser = current;
+        }
+        Node avatar = UserAvatarHelper.create(avatarUser, 42);
+        VBox tweetContent = new VBox(5);
+        HBox.setHgrow(tweetContent, Priority.ALWAYS);
         HBox header = new HBox(8);
 
         Label name = new Label(author != null ? displayName(author) : "User " + tweet.getAuthorId());
@@ -241,17 +272,78 @@ public class SearchController {
         content.setFont(Font.font(15));
         content.setWrapText(true);
 
-        card.getChildren().addAll(header, content);
+        tweetContent.getChildren().addAll(header, content);
 
         if (tweet.getMedia() != null && !tweet.getMedia().isEmpty()) {
             String url = tweet.getMedia().get(0).getUrl();
             Node media = TweetMediaHelper.createMediaNode(url, 380, 220);
             if (media != null) {
-                card.getChildren().add(media);
+                tweetContent.getChildren().add(media);
             }
         }
 
+        tweetRow.getChildren().addAll(avatar, tweetContent);
+        card.getChildren().add(tweetRow);
         return card;
+    }
+
+    private void loadDrawerProfile() {
+        Task<JsonObject> task = new Task<>() {
+            @Override
+            protected JsonObject call() throws Exception {
+                Response response = send(RequestType.GET_PROFILE, authenticatedBody());
+                JsonElement payload = response.getPayload();
+                if (payload == null || !payload.isJsonObject()) {
+                    throw new IllegalStateException("Invalid profile response.");
+                }
+                return payload.getAsJsonObject();
+            }
+        };
+        task.setOnSucceeded(event -> renderDrawerProfile(task.getValue()));
+        startTask(task, "load-search-drawer-profile");
+    }
+
+    private void renderDrawerProfile(JsonObject payload) {
+        User user = gson.fromJson(payload.get("user"), User.class);
+        if (user != null) {
+            User current = UserSession.getInstance().getCurrentUser();
+            if (current != null) {
+                current.setDisplayName(user.getDisplayName());
+                current.setBio(user.getBio());
+                current.setAvatarUrl(user.getAvatarUrl());
+                current.setBannerUrl(user.getBannerUrl());
+            }
+            SideDrawerHelper.populateUserHeader(drawerDisplayName, drawerUsername);
+            renderAvatar(user.getAvatarUrl(), drawerAvatarImage, drawerAvatarPlaceholder,
+                    drawerAvatarPlaceholderIcon, 48);
+            renderAvatar(user.getAvatarUrl(), topAvatarImage, topAvatarPlaceholder,
+                    topAvatarPlaceholderIcon, 32);
+        }
+        drawerFollowingCount.setText(jsonInteger(payload, "followingCount"));
+        drawerFollowersCount.setText(jsonInteger(payload, "followersCount"));
+    }
+
+    private String jsonInteger(JsonObject object, String property) {
+        return object.has(property) && !object.get(property).isJsonNull()
+                ? String.valueOf(object.get(property).getAsInt()) : "0";
+    }
+
+    private void renderAvatar(String url, ImageView view, Circle placeholder, Label icon, double size) {
+        Image image = null;
+        if (url != null && !url.isBlank()) {
+            try {
+                Image candidate = new Image(url, size * 2, size * 2, false, true);
+                if (!candidate.isError()) image = candidate;
+            } catch (RuntimeException ignored) {
+            }
+        }
+        boolean available = image != null;
+        view.setImage(image);
+        view.setVisible(available);
+        view.setManaged(available);
+        placeholder.setVisible(!available);
+        icon.setVisible(!available);
+        if (available) view.setClip(new Circle(size / 2, size / 2, size / 2));
     }
 
     private Label createSectionHeader(String text) {
@@ -383,6 +475,7 @@ public class SearchController {
     ) {}
 
     @FXML private void handleOpenDrawer() {
+        loadDrawerProfile();
         SideDrawerHelper.open(drawerOverlay, drawerPanel);
     }
 
