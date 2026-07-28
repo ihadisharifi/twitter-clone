@@ -10,7 +10,7 @@ import server.database.DatabaseInitializer;
 
 public class Server {
 
-    private  static final int PORT = 8080;
+    private  static final int PORT = 8090;
 
     public static void main(String[] args) {
         System.out.println("Server Started");
