@@ -125,13 +125,13 @@
                                     <children>
                                         <HBox spacing="4.0">
                                             <children>
-                                                <Label fx:id="drawerFollowingCount" styleClass="drawer-stat-count" text="145" />
+                                                <Label fx:id="drawerFollowingCount" styleClass="drawer-stat-count" text="0" />
                                                 <Label styleClass="drawer-stat-label" text="Following" />
                                             </children>
                                         </HBox>
                                         <HBox spacing="4.0">
                                             <children>
-                                                <Label fx:id="drawerFollowersCount" styleClass="drawer-stat-count" text="892" />
+                                                <Label fx:id="drawerFollowersCount" styleClass="drawer-stat-count" text="0" />
                                                 <Label styleClass="drawer-stat-label" text="Followers" />
                                             </children>
                                         </HBox>

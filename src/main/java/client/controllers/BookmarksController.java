@@ -3,591 +3,130 @@ package client.controllers;
 import client.LogoutHelper;
 import client.NavigationManager;
 import client.SideDrawerHelper;
-import client.TweetStore;
-import client.TweetStore.StoredTweet;
-import client.TweetTimeFormatter;
 import client.UserSession;
-import client.TweetMediaHelper;
-import javafx.animation.Animation;
-import javafx.animation.KeyFrame;
-import javafx.animation.Timeline;
+import client.network.ServerConnection;
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+import javafx.concurrent.Task;
 import javafx.fxml.FXML;
-import javafx.geometry.Insets;
-import javafx.geometry.Pos;
-import javafx.scene.Node;
-import javafx.scene.control.Button;
 import javafx.scene.control.Label;
-import javafx.scene.control.TextArea;
-import javafx.scene.control.Tooltip;
-import javafx.scene.image.Image;
-import javafx.scene.image.ImageView;
 import javafx.scene.layout.HBox;
-import javafx.scene.layout.Priority;
-import javafx.scene.layout.Region;
-import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
-import javafx.stage.FileChooser;
-import javafx.stage.Stage;
-import javafx.util.Duration;
+import shared.models.User;
+import shared.protocol.Request;
+import shared.protocol.RequestType;
+import shared.protocol.Response;
+import shared.protocol.StatusCode;
 
-import java.io.File;
-
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.UUID;
 
 public class BookmarksController {
 
-    @FXML
-    private VBox bookmarksContainer;
+    @FXML private VBox bookmarksContainer;
+    @FXML private HBox drawerOverlay;
+    @FXML private VBox drawerPanel;
+    @FXML private Label drawerDisplayName;
+    @FXML private Label drawerUsername;
+    @FXML private Label drawerFollowingCount;
+    @FXML private Label drawerFollowersCount;
 
-    @FXML
-    private HBox drawerOverlay;
-
-    @FXML
-    private VBox drawerPanel;
-
-    @FXML
-    private Label drawerDisplayName;
-
-    @FXML
-    private Label drawerUsername;
-
-    private final List<TimestampLabel> liveTimestamps = new ArrayList<>();
-    private Timeline timeRefreshTimeline;
-
-    private static final String STYLE_ACTION_IDLE =
-            "-fx-background-color: transparent; -fx-text-fill: #71767b; -fx-padding: 0; -fx-cursor: hand;";
-    private static final String STYLE_REPLY_ACTIVE =
-            "-fx-background-color: transparent; -fx-text-fill: #1d9bf0; -fx-padding: 0; -fx-cursor: hand;";
-    private static final String STYLE_RETWEET_ACTIVE =
-            "-fx-background-color: transparent; -fx-text-fill: #00ba7c; -fx-padding: 0; -fx-cursor: hand;";
-    private static final String STYLE_LIKE_ACTIVE =
-            "-fx-background-color: transparent; -fx-text-fill: #f91880; -fx-padding: 0; -fx-cursor: hand;";
-    private static final String STYLE_BOOKMARK_ACTIVE =
-            "-fx-background-color: transparent; -fx-text-fill: #1d9bf0; -fx-padding: 0; -fx-cursor: hand;";
-    private static final String STYLE_COMPOSE_AREA =
-            "-fx-control-inner-background: #000000; -fx-text-fill: #ffffff; -fx-prompt-text-fill: #71767b; -fx-border-color: #333333; -fx-border-radius: 8; -fx-background-radius: 8; -fx-font-size: 14px;";
-    private static final String STYLE_POST_BTN =
-            "-fx-background-color: #1d9bf0; -fx-text-fill: #ffffff; -fx-background-radius: 18; -fx-font-weight: bold; -fx-font-size: 13px; -fx-padding: 4 14; -fx-cursor: hand;";
-    private static final String STYLE_DELETE_BTN =
-            "-fx-background-color: transparent; -fx-text-fill: #f4212e; -fx-padding: 0; -fx-cursor: hand; -fx-font-size: 14;";
+    private final Gson gson = new Gson();
+    private final ServerConnection connection = ServerConnection.getInstance();
 
     @FXML
     public void initialize() {
         SideDrawerHelper.populateUserHeader(drawerDisplayName, drawerUsername);
-        loadBookmarks();
-        startTimestampRefresh();
+        renderUnsupportedState();
+        loadDrawerProfile();
     }
 
-    private void loadBookmarks() {
+    private void renderUnsupportedState() {
         bookmarksContainer.getChildren().clear();
-        liveTimestamps.clear();
+        VBox box = new VBox(8);
+        box.setStyle("-fx-padding: 80 40; -fx-alignment: center;");
 
-        TweetStore.getInstance().seedIfEmpty();
-        List<StoredTweet> bookmarkedList = TweetStore.getInstance().getBookmarkedTweets();
+        Label title = new Label("Bookmarks aren't available yet");
+        title.setTextFill(Color.WHITE);
+        title.setFont(Font.font("System", FontWeight.BOLD, 22));
 
-        if (bookmarkedList.isEmpty()) {
-            renderEmptyState();
-            return;
-        }
-
-        for (StoredTweet tweet : bookmarkedList) {
-            renderBookmarkTweetCard(tweet);
-        }
-    }
-
-    private void renderEmptyState() {
-        VBox emptyBox = new VBox(8);
-        emptyBox.setStyle("-fx-padding: 80 40 40 40; -fx-alignment: center;");
-
-        Label titleLabel = new Label("No Bookmarks yet");
-        titleLabel.setTextFill(Color.WHITE);
-        titleLabel.setFont(Font.font("System", FontWeight.BOLD, 22));
-
-        Label subLabel = new Label("Bookmark posts to easily find them again in the future.");
-        subLabel.setTextFill(Color.web("#71767b"));
-        subLabel.setFont(Font.font("System", 14));
-        subLabel.setWrapText(true);
-
-        emptyBox.getChildren().addAll(titleLabel, subLabel);
-        bookmarksContainer.getChildren().add(emptyBox);
-    }
-
-    private void renderBookmarkTweetCard(StoredTweet tweet) {
-        VBox card = new VBox(6);
-        card.setStyle("-fx-border-color: #333333; -fx-border-width: 0 0 1 0; -fx-padding: 12 16 12 16;");
-
-        if (tweet.isRetweet()) {
-            Label repostLabel = new Label("🔁 " + safeName(tweet.getAuthorDisplayName()) + " reposted");
-            repostLabel.setTextFill(Color.web("#71767b"));
-            repostLabel.setFont(Font.font("System", 13));
-            card.getChildren().add(repostLabel);
-        }
-        else if (tweet.isReply()) {
-            String replyTo = tweet.getOriginalAuthorUsername() != null
-                    ? "@" + tweet.getOriginalAuthorUsername()
-                    : "someone";
-            Label replyLabel = new Label("💬 Replying to " + replyTo);
-            replyLabel.setTextFill(Color.web("#1d9bf0"));
-            replyLabel.setFont(Font.font("System", 13));
-            card.getChildren().add(replyLabel);
-        }
-
-        HBox tweetRow = new HBox(12);
-
-        VBox avatarBox = new VBox();
-        Label avatar = new Label("👤");
-        avatar.setFont(Font.font("System", 24));
-        avatar.setTextFill(Color.web("#71767b"));
-        avatarBox.getChildren().add(avatar);
-
-        VBox contentStack = new VBox(4);
-        HBox.setHgrow(contentStack, Priority.ALWAYS);
-
-        String headerName = tweet.isRetweet()
-                ? safeName(tweet.getOriginalAuthorDisplayName())
-                : safeName(tweet.getAuthorDisplayName());
-        String headerHandle = tweet.isRetweet()
-                ? safeUsername(tweet.getOriginalAuthorUsername())
-                : safeUsername(tweet.getAuthorUsername());
-
-        HBox headerRow = new HBox(8);
-        Label displayName = new Label(headerName);
-        displayName.setTextFill(Color.WHITE);
-        displayName.setFont(Font.font("System", FontWeight.BOLD, 15));
-
-        Label userHandle = new Label("@" + headerHandle);
-        userHandle.setTextFill(Color.web("#71767b"));
-        userHandle.setFont(Font.font("System", 14));
-
-        Label timestamp = createTimestampLabel(tweet.getCreatedAt());
-
-        headerRow.getChildren().addAll(displayName, userHandle, timestamp);
-
-        Label bodyText = new Label(tweet.getContent());
-        bodyText.setTextFill(Color.web("#e7e9ea"));
-        bodyText.setFont(Font.font("System", 15));
-        bodyText.setWrapText(true);
-
-        StoredTweet engagementTarget = engagementTarget(tweet);
-
-        HBox actionToolbar = new HBox(40);
-        actionToolbar.setStyle("-fx-padding: 6 0 0 0;");
-
-        // Reply panel (composer + thread) toggled by reply button
-        VBox replyPanel = new VBox(8);
-        replyPanel.setVisible(false);
-        replyPanel.setManaged(false);
-        replyPanel.setStyle("-fx-padding: 8 0 0 0;");
-
-        Button replyButton = new Button();
-        applyReplyStyle(replyButton, engagementTarget);
-        replyButton.setOnAction(event -> {
-            boolean open = !replyPanel.isVisible();
-            replyPanel.setVisible(open);
-            replyPanel.setManaged(open);
-            if (open) {
-                rebuildReplyPanel(replyPanel, engagementTarget, replyButton);
-            }
-        });
-
-        Button retweetButton = new Button();
-        applyRetweetStyle(retweetButton, engagementTarget);
-        retweetButton.setOnAction(event -> {
-            TweetStore.getInstance().toggleRetweet(
-                    engagementTarget.getId(),
-                    currentUsername(),
-                    currentDisplayName()
-            );
-            loadBookmarks();
-        });
-
-        Button likeButton = new Button();
-        applyLikeStyle(likeButton, engagementTarget);
-        likeButton.setOnAction(event -> {
-            TweetStore.getInstance().toggleLike(engagementTarget.getId());
-            applyLikeStyle(likeButton, engagementTarget);
-        });
-
-        Button bookmarkButton = new Button();
-        applyBookmarkStyle(bookmarkButton, engagementTarget);
-        bookmarkButton.setOnAction(event -> {
-            TweetStore.getInstance().toggleBookmark(engagementTarget.getId());
-            loadBookmarks();
-        });
-
-        actionToolbar.getChildren().addAll(replyButton, retweetButton, likeButton, bookmarkButton);
-
-        contentStack.getChildren().addAll(headerRow, bodyText);
-        renderTweetMediaIfPresent(contentStack, tweet);
-        contentStack.getChildren().addAll(actionToolbar, replyPanel);
-        tweetRow.getChildren().addAll(avatarBox, contentStack);
-        card.getChildren().add(tweetRow);
-
-        bookmarksContainer.getChildren().add(card);
-    }
-
-    private void startTimestampRefresh() {
-        if (timeRefreshTimeline != null) {
-            timeRefreshTimeline.stop();
-        }
-        timeRefreshTimeline = new Timeline(
-                new KeyFrame(Duration.seconds(15), e -> {
-                    for (TimestampLabel entry : liveTimestamps) {
-                        entry.label.setText(TweetTimeFormatter.formatFeedDot(entry.createdAt));
-                    }
-                })
+        Label detail = new Label(
+                "The server database does not currently provide bookmark storage. "
+                        + "No fake or device-only bookmarks are being shown."
         );
-        timeRefreshTimeline.setCycleCount(Animation.INDEFINITE);
-        timeRefreshTimeline.play();
+        detail.setTextFill(Color.web("#71767b"));
+        detail.setFont(Font.font("System", 14));
+        detail.setWrapText(true);
+        detail.setMaxWidth(420);
+        box.getChildren().addAll(title, detail);
+        bookmarksContainer.getChildren().add(box);
     }
 
-    private Label createTimestampLabel(Instant createdAt) {
-        Label timestamp = new Label(TweetTimeFormatter.formatFeedDot(createdAt));
-        timestamp.setFont(Font.font("System", 14));
-        timestamp.setTextFill(Color.web("#71767b"));
-        Tooltip.install(timestamp, new Tooltip(TweetTimeFormatter.formatAbsolute(createdAt)));
-        liveTimestamps.add(new TimestampLabel(timestamp, createdAt));
-        return timestamp;
-    }
-
-    private static final class TimestampLabel {
-        final Label label;
-        final Instant createdAt;
-
-        TimestampLabel(Label label, Instant createdAt) {
-            this.label = label;
-            this.createdAt = createdAt;
-        }
-    }
-
-    private StoredTweet engagementTarget(StoredTweet tweet) {
-        if (tweet.isRetweet() && tweet.getRetweetOfId() != null) {
-            StoredTweet original = TweetStore.getInstance().findById(tweet.getRetweetOfId());
-            if (original != null) {
-                return original;
-            }
-        }
-        return tweet;
-    }
-
-    private void applyReplyStyle(Button button, StoredTweet tweet) {
-        button.setText("💬 " + tweet.getReplies());
-        button.setStyle(tweet.getReplies() > 0 ? STYLE_REPLY_ACTIVE : STYLE_ACTION_IDLE);
-    }
-
-    private void applyRetweetStyle(Button button, StoredTweet tweet) {
-        button.setText("🔁 " + tweet.getRetweets());
-        button.setStyle(tweet.isRetweetedByCurrentUser() ? STYLE_RETWEET_ACTIVE : STYLE_ACTION_IDLE);
-    }
-
-    private void applyLikeStyle(Button button, StoredTweet tweet) {
-        if (tweet.isLikedByCurrentUser()) {
-            button.setText("❤ " + tweet.getLikes());
-            button.setStyle(STYLE_LIKE_ACTIVE);
-        } else {
-            button.setText("♡ " + tweet.getLikes());
-            button.setStyle(STYLE_ACTION_IDLE);
-        }
-    }
-
-    private void applyBookmarkStyle(Button button, StoredTweet tweet) {
-        button.setText("🔖");
-        button.setStyle(tweet.isBookmarked() ? STYLE_BOOKMARK_ACTIVE : STYLE_ACTION_IDLE);
-    }
-
-    private void renderTweetMediaIfPresent(VBox contentStack, StoredTweet tweet) {
-        String mediaPath = tweet.getMediaPath();
-        if (mediaPath != null && !mediaPath.isBlank()) {
-            Node mediaNode = TweetMediaHelper.createMediaNode(mediaPath, 380, 220);
-            if (mediaNode != null) {
-                contentStack.getChildren().add(mediaNode);
-            }
-        }
-    }
-
-    private void rebuildReplyPanel(VBox replyPanel, StoredTweet parent, Button replyButton) {
-        replyPanel.getChildren().clear();
-
-        List<StoredTweet> replies = TweetStore.getInstance().getReplies(parent.getId());
-
-        if (replies.isEmpty()) {
-            Label empty = new Label("No replies yet — be the first to reply.");
-            empty.setTextFill(Color.web("#71767b"));
-            empty.setFont(Font.font("System", 13));
-            replyPanel.getChildren().add(empty);
-        }
-        else {
-            VBox thread = new VBox(0);
-            for (StoredTweet reply : replies) {
-                thread.getChildren().add(buildNestedReplyNode(reply));
-            }
-            replyPanel.getChildren().add(thread);
-        }
-
-        TextArea replyInput = new TextArea();
-        replyInput.setPromptText("Post your reply");
-        replyInput.setPrefRowCount(2);
-        replyInput.setWrapText(true);
-        replyInput.setStyle(STYLE_COMPOSE_AREA);
-        replyInput.setMaxWidth(Double.MAX_VALUE);
-
-        // Reply Media Attachment Preview Container
-        StackPane replyMediaPreviewContainer = new StackPane();
-        replyMediaPreviewContainer.setAlignment(Pos.TOP_RIGHT);
-        replyMediaPreviewContainer.setMaxHeight(160);
-        replyMediaPreviewContainer.setMaxWidth(340);
-        replyMediaPreviewContainer.setVisible(false);
-        replyMediaPreviewContainer.setManaged(false);
-        replyMediaPreviewContainer.setStyle("-fx-background-color: #16181c; -fx-background-radius: 10; -fx-border-color: #333333; -fx-border-radius: 10;");
-
-        VBox replyMediaPreviewBox = new VBox();
-        replyMediaPreviewBox.setAlignment(Pos.CENTER);
-
-        final String[] replySelectedMediaPath = new String[1];
-
-        Button removeReplyMediaBtn = new Button("✕");
-        removeReplyMediaBtn.setStyle("-fx-background-color: rgba(15, 20, 25, 0.75); -fx-text-fill: white; -fx-background-radius: 50%; -fx-min-width: 24px; -fx-min-height: 24px; -fx-font-size: 11px; -fx-cursor: hand;");
-        StackPane.setMargin(removeReplyMediaBtn, new Insets(6, 6, 0, 0));
-        removeReplyMediaBtn.setOnAction(e -> {
-            replySelectedMediaPath[0] = null;
-            replyMediaPreviewBox.getChildren().clear();
-            replyMediaPreviewContainer.setVisible(false);
-            replyMediaPreviewContainer.setManaged(false);
-        });
-
-        replyMediaPreviewContainer.getChildren().addAll(replyMediaPreviewBox, removeReplyMediaBtn);
-
-        HBox replyActions = new HBox(12);
-        replyActions.setAlignment(Pos.CENTER_RIGHT);
-
-        Button attachMediaBtn = new Button("🖼️");
-        attachMediaBtn.setStyle("-fx-background-color: transparent; -fx-text-fill: #1d9bf0; -fx-font-size: 16px; -fx-padding: 4; -fx-cursor: hand;");
-        attachMediaBtn.setOnAction(e -> {
-            FileChooser fileChooser = new FileChooser();
-            fileChooser.setTitle("Attach Media to Reply");
-            fileChooser.getExtensionFilters().addAll(
-                    new FileChooser.ExtensionFilter("Media Files (*.png, *.jpg, *.jpeg, *.gif, *.mp4, *.m4v)", "*.png", "*.jpg", "*.jpeg", "*.gif", "*.mp4", "*.m4v"),
-                    new FileChooser.ExtensionFilter("Image Files", "*.png", "*.jpg", "*.jpeg", "*.gif"),
-                    new FileChooser.ExtensionFilter("Video Files", "*.mp4", "*.m4v")
-            );
-            Stage stage = (Stage) replyInput.getScene().getWindow();
-            File file = fileChooser.showOpenDialog(stage);
-            if (file != null) {
-                replySelectedMediaPath[0] = file.toURI().toString();
-                Node previewNode = TweetMediaHelper.createMediaNode(replySelectedMediaPath[0], 340, 150);
-                if (previewNode != null) {
-                    replyMediaPreviewBox.getChildren().clear();
-                    replyMediaPreviewBox.getChildren().add(previewNode);
-                    replyMediaPreviewContainer.setVisible(true);
-                    replyMediaPreviewContainer.setManaged(true);
-                } else {
-                    replySelectedMediaPath[0] = null;
+    private void loadDrawerProfile() {
+        Task<JsonObject> task = new Task<>() {
+            @Override
+            protected JsonObject call() throws Exception {
+                String token = UserSession.getInstance().getToken();
+                if (token == null || token.isBlank()) {
+                    throw new IllegalStateException("Your session has expired.");
                 }
+                if (!connection.isConnected()) {
+                    connection.connect();
+                }
+                JsonObject body = new JsonObject();
+                body.addProperty("token", token);
+                Response response = connection.sendMessage(new Request(
+                        UUID.randomUUID().toString(), RequestType.GET_PROFILE, body
+                ));
+                if (response == null || response.getStatus() != StatusCode.OK
+                        || response.getPayload() == null || !response.getPayload().isJsonObject()) {
+                    throw new IllegalStateException("Unable to load profile.");
+                }
+                return response.getPayload().getAsJsonObject();
             }
-        });
-
-        Button emojiBtn = new Button("😊");
-        emojiBtn.setStyle("-fx-background-color: transparent; -fx-text-fill: #1d9bf0; -fx-font-size: 16px; -fx-padding: 4; -fx-cursor: hand;");
-        emojiBtn.setOnAction(e -> client.EmojiPickerHelper.showEmojiPicker(emojiBtn, replyInput));
-
-        Region spacer = new Region();
-        HBox.setHgrow(spacer, Priority.ALWAYS);
-
-        Button sendReply = new Button("Reply");
-        sendReply.setStyle(STYLE_POST_BTN);
-        sendReply.setOnAction(e -> {
-            String text = replyInput.getText() != null ? replyInput.getText().trim() : "";
-            if (text.isEmpty() && replySelectedMediaPath[0] == null) {
-                return;
+        };
+        task.setOnSucceeded(event -> {
+            JsonObject payload = task.getValue();
+            User user = gson.fromJson(payload.get("user"), User.class);
+            if (user != null) {
+                User current = UserSession.getInstance().getCurrentUser();
+                if (current != null) {
+                    current.setDisplayName(user.getDisplayName());
+                    current.setBio(user.getBio());
+                    current.setAvatarUrl(user.getAvatarUrl());
+                    current.setBannerUrl(user.getBannerUrl());
+                }
+                SideDrawerHelper.populateUserHeader(drawerDisplayName, drawerUsername);
             }
-            TweetStore.getInstance().addReply(
-                    parent.getId(),
-                    text,
-                    currentUsername(),
-                    currentDisplayName(),
-                    replySelectedMediaPath[0]
-            );
-            applyReplyStyle(replyButton, parent);
-            rebuildReplyPanel(replyPanel, parent, replyButton);
+            drawerFollowingCount.setText(number(payload, "followingCount"));
+            drawerFollowersCount.setText(number(payload, "followersCount"));
         });
-
-        replyActions.getChildren().addAll(attachMediaBtn, emojiBtn, spacer, sendReply);
-
-        replyPanel.getChildren().addAll(replyInput, replyMediaPreviewContainer, replyActions);
+        start(task, "load-bookmarks-drawer-profile");
     }
 
-    private VBox buildNestedReplyNode(StoredTweet reply) {
-        VBox node = new VBox(4);
-        node.setPadding(new Insets(10, 0, 10, 12));
-        node.setStyle("-fx-border-color: #333333; -fx-border-width: 0 0 0 2; -fx-padding: 8 0 8 12;");
-
-        HBox header = new HBox(8);
-        Label name = new Label(safeName(reply.getAuthorDisplayName()));
-        name.setTextFill(Color.WHITE);
-        name.setFont(Font.font("System", FontWeight.BOLD, 14));
-
-        Label handle = new Label("@" + safeUsername(reply.getAuthorUsername()));
-        handle.setTextFill(Color.web("#71767b"));
-        handle.setFont(Font.font("System", 13));
-
-        Label time = createTimestampLabel(reply.getCreatedAt());
-        time.setFont(Font.font("System", 13));
-
-        header.getChildren().addAll(name, handle, time);
-
-        if (isOwnedByCurrentUser(reply)) {
-            Region spacer = new Region();
-            HBox.setHgrow(spacer, Priority.ALWAYS);
-            header.getChildren().addAll(spacer, createDeleteButton(reply.getId(), () -> loadBookmarks()));
-        }
-
-        Label body = new Label(reply.getContent());
-        body.setTextFill(Color.web("#e7e9ea"));
-        body.setFont(Font.font("System", 14));
-        body.setWrapText(true);
-        body.setMaxWidth(400);
-
-        node.getChildren().addAll(header, body);
-
-        if (reply.getMediaPath() != null && !reply.getMediaPath().isBlank()) {
-            Node mediaNode = TweetMediaHelper.createMediaNode(reply.getMediaPath(), 340, 180);
-            if (mediaNode != null) {
-                node.getChildren().add(mediaNode);
-            }
-        }
-
-        // Action Toolbar for Nested Reply (4 Buttons: Reply, Retweet, Like, Bookmark)
-        HBox actionToolbar = new HBox(30);
-        actionToolbar.setStyle("-fx-padding: 4 0 0 0;");
-
-        VBox replyPanel = new VBox(8);
-        replyPanel.setVisible(false);
-        replyPanel.setManaged(false);
-        replyPanel.setStyle("-fx-padding: 6 0 0 0;");
-
-        Button replyBtn = new Button();
-        applyReplyStyle(replyBtn, reply);
-        replyBtn.setOnAction(event -> {
-            boolean open = !replyPanel.isVisible();
-            replyPanel.setVisible(open);
-            replyPanel.setManaged(open);
-            if (open) {
-                rebuildReplyPanel(replyPanel, reply, replyBtn);
-            }
-        });
-
-        Button retweetBtn = new Button();
-        applyRetweetStyle(retweetBtn, reply);
-        retweetBtn.setOnAction(event -> {
-            TweetStore.getInstance().toggleRetweet(
-                    reply.getId(),
-                    currentUsername(),
-                    currentDisplayName()
-            );
-            loadBookmarks();
-        });
-
-        Button likeBtn = new Button();
-        applyLikeStyle(likeBtn, reply);
-        likeBtn.setOnAction(event -> {
-            TweetStore.getInstance().toggleLike(reply.getId());
-            applyLikeStyle(likeBtn, reply);
-        });
-
-        Button bookmarkBtn = new Button();
-        applyBookmarkStyle(bookmarkBtn, reply);
-        bookmarkBtn.setOnAction(event -> {
-            TweetStore.getInstance().toggleBookmark(reply.getId());
-            loadBookmarks();
-        });
-
-        actionToolbar.getChildren().addAll(replyBtn, retweetBtn, likeBtn, bookmarkBtn);
-        node.getChildren().addAll(actionToolbar, replyPanel);
-
-        return node;
+    private String number(JsonObject payload, String property) {
+        return payload.has(property) && !payload.get(property).isJsonNull()
+                ? String.valueOf(payload.get(property).getAsInt()) : "0";
     }
 
-    private Button createDeleteButton(int tweetId, Runnable afterDelete) {
-        Button deleteButton = new Button("🗑");
-        deleteButton.setStyle(STYLE_DELETE_BTN);
-        deleteButton.setOnAction(event -> {
-            String username = currentUsername();
-            if (TweetStore.getInstance().deleteTweet(tweetId, username)) {
-                afterDelete.run();
-            }
-        });
-        return deleteButton;
+    private void start(Task<?> task, String name) {
+        Thread thread = new Thread(task, name);
+        thread.setDaemon(true);
+        thread.start();
     }
 
-    private boolean isOwnedByCurrentUser(StoredTweet tweet) {
-        return currentUsername().equals(tweet.getAuthorUsername());
-    }
-
-    private String currentUsername() {
-        String username = UserSession.getInstance().getUsername();
-        return username != null ? username : "developer";
-    }
-
-    private String currentDisplayName() {
-        String displayName = UserSession.getInstance().getDisplayName();
-        return displayName != null ? displayName : "Guest";
-    }
-
-    private String safeName(String name) {
-        return (name == null || name.isBlank()) ? "Guest" : name;
-    }
-
-    private String safeUsername(String username) {
-        return (username == null || username.isBlank()) ? "developer" : username;
-    }
-
-    @FXML
-    private void handleOpenDrawer() {
+    @FXML private void handleOpenDrawer() {
+        loadDrawerProfile();
         SideDrawerHelper.open(drawerOverlay, drawerPanel);
     }
-
-    @FXML
-    private void handleCloseDrawer() {
-        SideDrawerHelper.close(drawerOverlay, drawerPanel);
-    }
-
-    @FXML
-    private void handleBack() {
-        NavigationManager.switchScene("/views/Feed.fxml");
-    }
-
-    @FXML
-    private void handleGoToHome() {
-        NavigationManager.switchScene("/views/Feed.fxml");
-    }
-
-    @FXML
-    private void handleGoToSearch() {
-        NavigationManager.switchScene("/views/Search.fxml");
-    }
-
-    @FXML
-    private void handleCreatePost() {
-        NavigationManager.switchScene("/views/Compose.fxml");
-    }
-
-    @FXML
-    private void handleGoToProfile() {
-        NavigationManager.switchScene("/views/Profile.fxml");
-    }
-
-    @FXML
-    private void handleGoToBookmarks() {
-        SideDrawerHelper.close(drawerOverlay, drawerPanel);
-    }
-
-    @FXML
-    private void handleLogout() {
-        LogoutHelper.showConfirmation();
-    }
+    @FXML private void handleCloseDrawer() { SideDrawerHelper.close(drawerOverlay, drawerPanel); }
+    @FXML private void handleBack() { NavigationManager.switchScene("/views/Feed.fxml"); }
+    @FXML private void handleGoToHome() { NavigationManager.switchScene("/views/Feed.fxml"); }
+    @FXML private void handleGoToSearch() { NavigationManager.switchScene("/views/Search.fxml"); }
+    @FXML private void handleCreatePost() { NavigationManager.switchScene("/views/Compose.fxml"); }
+    @FXML private void handleGoToProfile() { NavigationManager.switchScene("/views/Profile.fxml"); }
+    @FXML private void handleGoToBookmarks() { SideDrawerHelper.close(drawerOverlay, drawerPanel); }
+    @FXML private void handleLogout() { LogoutHelper.showConfirmation(); }
 }
