@@ -7,6 +7,8 @@ import client.TweetMediaHelper;
 import client.TweetTimeFormatter;
 import client.UserSession;
 import client.UserAvatarHelper;
+import client.TweetStatisticsService;
+import client.UiIconHelper;
 import client.network.ServerConnection;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
@@ -15,6 +17,7 @@ import javafx.animation.PauseTransition;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.scene.Node;
+import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.scene.image.Image;
@@ -129,6 +132,16 @@ public class SearchController {
                 if (term.type() != SearchType.USERNAME) {
                     tweets = searchTweets(term.original());
                 }
+                Map<Integer, TweetStatisticsService.Statistics> statistics = tweets.isEmpty()
+                        ? Map.of()
+                        : new TweetStatisticsService().load(tweets);
+                if (!statistics.isEmpty()) {
+                    List<Tweet> detailedTweets = new java.util.ArrayList<>();
+                    for (Tweet tweet : tweets) {
+                        detailedTweets.add(statistics.get(tweet.getId()).tweet());
+                    }
+                    tweets = detailedTweets;
+                }
 
                 Map<Integer, User> usersById = new HashMap<>();
                 for (User user : users) {
@@ -144,7 +157,7 @@ public class SearchController {
                     usersById.put(current.getId(), current);
                 }
 
-                return new SearchResults(users, tweets, usersById);
+                return new SearchResults(users, tweets, usersById, statistics);
             }
         };
     }
@@ -190,7 +203,9 @@ public class SearchController {
             searchResultsContainer.getChildren().add(createSectionHeader(title));
             for (Tweet tweet : results.tweets()) {
                 User author = results.usersById().get(tweet.getAuthorId());
-                searchResultsContainer.getChildren().add(createTweetCard(tweet, author));
+                searchResultsContainer.getChildren().add(createTweetCard(
+                        tweet, author, results.statistics().get(tweet.getId())
+                ));
             }
         }
     }
@@ -234,7 +249,11 @@ public class SearchController {
         return card;
     }
     
-    private Node createTweetCard(Tweet tweet, User author) {
+    private Node createTweetCard(
+            Tweet tweet,
+            User author,
+            TweetStatisticsService.Statistics statistics
+    ) {
         VBox card = new VBox(6);
         card.setStyle(
                 "-fx-border-color: #333333; " +
@@ -266,6 +285,18 @@ public class SearchController {
         timestamp.setTextFill(Color.web("#71767b"));
 
         header.getChildren().addAll(name, username, timestamp);
+        if (author != null) {
+            card.setStyle(card.getStyle() + "-fx-cursor: hand;");
+            card.setOnMouseClicked(event -> {
+                ProfileController.pendingProfileUsername = author.getUsername();
+                NavigationManager.switchScene("/views/Profile.fxml");
+            });
+            avatar.setOnMouseClicked(event -> {
+                event.consume();
+                ProfileController.pendingProfileUsername = author.getUsername();
+                NavigationManager.switchScene("/views/Profile.fxml");
+            });
+        }
 
         Label content = new Label(tweet.getContent() == null ? "" : tweet.getContent());
         content.setTextFill(Color.web("#e7e9ea"));
@@ -282,9 +313,36 @@ public class SearchController {
             }
         }
 
+        HBox actions = new HBox(34);
+        Button replies = statisticButton(
+                UiIconHelper.Icon.REPLY,
+                statistics == null ? 0 : statistics.repliesCount(),
+                "#71767b"
+        );
+        Button reposts = statisticButton(
+                UiIconHelper.Icon.REPOST,
+                statistics == null ? 0 : statistics.repostsCount(),
+                "#71767b"
+        );
+        Button likes = statisticButton(
+                UiIconHelper.Icon.HEART,
+                tweet.getLikesCount(),
+                tweet.isLikedByCurrentUser() ? "#f91880" : "#71767b"
+        );
+        actions.getChildren().addAll(replies, reposts, likes);
+        tweetContent.getChildren().add(actions);
+
         tweetRow.getChildren().addAll(avatar, tweetContent);
         card.getChildren().add(tweetRow);
         return card;
+    }
+
+    private Button statisticButton(UiIconHelper.Icon icon, int count, String color) {
+        Button button = new Button(String.valueOf(count));
+        button.setMouseTransparent(true);
+        button.setStyle("-fx-background-color: transparent; -fx-text-fill: " + color + ";");
+        UiIconHelper.apply(button, icon, color);
+        return button;
     }
 
     private void loadDrawerProfile() {
@@ -360,8 +418,8 @@ public class SearchController {
         VBox box = new VBox(10);
         box.setStyle("-fx-padding: 60 40; -fx-alignment: center;");
 
-        Label icon = new Label("🔍");
-        icon.setStyle("-fx-font-size: 48px;");
+        Label icon = new Label("SEARCH");
+        icon.setStyle("-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #71767b;");
 
         Label titleLabel = new Label(title);
         titleLabel.setTextFill(Color.WHITE);
@@ -471,7 +529,8 @@ public class SearchController {
     private record SearchResults(
             List<User> users,
             List<Tweet> tweets,
-            Map<Integer, User> usersById
+            Map<Integer, User> usersById,
+            Map<Integer, TweetStatisticsService.Statistics> statistics
     ) {}
 
     @FXML private void handleOpenDrawer() {

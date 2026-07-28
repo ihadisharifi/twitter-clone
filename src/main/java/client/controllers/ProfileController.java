@@ -7,8 +7,11 @@ import client.TweetMediaHelper;
 import client.TweetTimeFormatter;
 import client.UserSession;
 import client.UserAvatarHelper;
+import client.UiIconHelper;
+import client.TweetStatisticsService;
 import client.network.ServerConnection;
 import com.google.gson.Gson;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import javafx.concurrent.Task;
@@ -20,11 +23,13 @@ import javafx.scene.control.ButtonType;
 import javafx.scene.control.DialogPane;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
+import javafx.scene.control.TextArea;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
+import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
@@ -45,6 +50,8 @@ import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 
 public class ProfileController {
@@ -84,6 +91,8 @@ public class ProfileController {
     private User profileUser;
     private boolean ownProfile;
     private boolean following;
+    private Map<Integer, Integer> ownReposts = Map.of();
+    private Map<Integer, TweetStatisticsService.Statistics> tweetStatistics = Map.of();
 
     @FXML
     public void initialize() {
@@ -120,6 +129,16 @@ public class ProfileController {
                 tweetBody.addProperty("username", user.getUsername());
                 Response tweetsResponse = send(RequestType.GET_USER_TWEETS, tweetBody);
                 List<Tweet> tweets = parseTweets(tweetsResponse.getPayload());
+                Map<Integer, TweetStatisticsService.Statistics> statistics =
+                        new TweetStatisticsService().load(tweets);
+
+                Map<Integer, Integer> reposts = new HashMap<>();
+                Response feedResponse = send(RequestType.GET_FEED, authenticatedBody());
+                for (Tweet feedTweet : parseTweets(feedResponse.getPayload())) {
+                    if (feedTweet.getRetweetToId() != null) {
+                        reposts.put(feedTweet.getRetweetToId(), feedTweet.getId());
+                    }
+                }
 
                 boolean follows = false;
                 User current = UserSession.getInstance().getCurrentUser();
@@ -133,7 +152,9 @@ public class ProfileController {
                         tweets,
                         integer(profilePayload, "followingCount"),
                         integer(profilePayload, "followersCount"),
-                        follows
+                        follows,
+                        reposts,
+                        statistics
                 );
             }
         };
@@ -152,6 +173,8 @@ public class ProfileController {
         User current = session.getCurrentUser();
         ownProfile = current != null && current.getId() == profileUser.getId();
         following = data.following();
+        ownReposts = data.ownReposts();
+        tweetStatistics = data.tweetStatistics();
         if (ownProfile) {
             current.setDisplayName(profileUser.getDisplayName());
             current.setBio(profileUser.getBio());
@@ -219,7 +242,8 @@ public class ProfileController {
         HBox.setHgrow(spacer, Priority.ALWAYS);
         header.getChildren().addAll(displayName, username, timestamp, spacer);
         if (ownProfile) {
-            Button delete = new Button("🗑");
+            Button delete = new Button("Delete");
+            UiIconHelper.apply(delete, UiIconHelper.Icon.TRASH, "#f4212e");
             delete.setStyle(DELETE_STYLE);
             delete.setOnAction(event -> deleteTweet(tweet.getId()));
             header.getChildren().add(delete);
@@ -239,14 +263,133 @@ public class ProfileController {
             }
         }
 
+        HBox actions = new HBox(34);
+
+        VBox replyComposer = createReplyComposer(tweet);
+        TweetStatisticsService.Statistics statistics = tweetStatistics.get(tweet.getId());
+        Button reply = new Button(String.valueOf(statistics == null ? 0 : statistics.repliesCount()));
+        UiIconHelper.apply(reply, UiIconHelper.Icon.REPLY, "#71767b");
+        reply.setStyle(ACTION_STYLE);
+        reply.setOnAction(event -> {
+            boolean visible = !replyComposer.isVisible();
+            replyComposer.setVisible(visible);
+            replyComposer.setManaged(visible);
+        });
+
+        Button repost = new Button(String.valueOf(statistics == null ? 0 : statistics.repostsCount()));
+        boolean reposted = ownReposts.containsKey(tweet.getId());
+        UiIconHelper.apply(
+                repost, UiIconHelper.Icon.REPOST, reposted ? "#00ba7c" : "#71767b"
+        );
+        repost.setStyle(reposted
+                ? "-fx-background-color: transparent; -fx-text-fill: #00ba7c; -fx-padding: 0; -fx-cursor: hand;"
+                : ACTION_STYLE);
+        repost.setOnAction(event -> toggleRepost(tweet, repost));
+
         Button like = new Button();
         styleLikeButton(like, tweet);
         like.setOnAction(event -> toggleLike(tweet, like));
-        content.getChildren().add(like);
+        actions.getChildren().addAll(reply, repost, like);
+        content.getChildren().addAll(actions, replyComposer);
 
         row.getChildren().addAll(avatar, content);
         card.getChildren().add(row);
         return card;
+    }
+
+    private VBox createReplyComposer(Tweet parent) {
+        VBox composer = new VBox(8);
+        composer.setVisible(false);
+        composer.setManaged(false);
+        composer.setStyle("-fx-padding: 10; -fx-background-color: #16181c; -fx-background-radius: 10;");
+
+        TextArea input = new TextArea();
+        input.setPromptText("Post your reply");
+        input.setPrefRowCount(3);
+        input.setWrapText(true);
+        input.setStyle("-fx-control-inner-background: #000000; -fx-text-fill: white; "
+                + "-fx-prompt-text-fill: #71767b; -fx-border-color: #333333;");
+
+        StackPane preview = new StackPane();
+        preview.setVisible(false);
+        preview.setManaged(false);
+        String[] selectedMedia = new String[1];
+
+        Button attach = new Button("Media");
+        UiIconHelper.apply(attach, UiIconHelper.Icon.IMAGE, "#1d9bf0");
+        attach.setStyle(ACTION_STYLE);
+        attach.setOnAction(event -> {
+            FileChooser chooser = new FileChooser();
+            chooser.setTitle("Attach media to reply");
+            chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter(
+                    "Media", "*.png", "*.jpg", "*.jpeg", "*.gif", "*.mp4", "*.m4v"
+            ));
+            File file = chooser.showOpenDialog((Stage) userTweetsContainer.getScene().getWindow());
+            if (file != null) {
+                selectedMedia[0] = file.toURI().toString();
+                Node media = TweetMediaHelper.createMediaNode(selectedMedia[0], 330, 170);
+                if (media != null) {
+                    preview.getChildren().setAll(media);
+                    preview.setVisible(true);
+                    preview.setManaged(true);
+                }
+            }
+        });
+
+        Button post = new Button("Reply");
+        post.setStyle("-fx-background-color: #1d9bf0; -fx-text-fill: white; "
+                + "-fx-background-radius: 18; -fx-font-weight: bold;");
+        post.setOnAction(event -> {
+            String text = input.getText() == null ? "" : input.getText().trim();
+            if (text.isEmpty()) return;
+            post.setDisable(true);
+            Task<Void> task = new Task<>() {
+                @Override
+                protected Void call() throws Exception {
+                    JsonObject body = authenticatedBody();
+                    body.addProperty("content", text);
+                    body.addProperty("replyToId", parent.getId());
+                    if (selectedMedia[0] != null) {
+                        JsonArray media = new JsonArray();
+                        media.add(selectedMedia[0]);
+                        body.add("mediaUrls", media);
+                    }
+                    send(RequestType.CREATE_TWEET, body);
+                    return null;
+                }
+            };
+            task.setOnSucceeded(success -> loadProfile());
+            task.setOnFailed(failure -> post.setDisable(false));
+            start(task, "reply-from-profile");
+        });
+
+        HBox controls = new HBox(10, attach, post);
+        composer.getChildren().addAll(input, preview, controls);
+        return composer;
+    }
+
+    private void toggleRepost(Tweet tweet, Button button) {
+        button.setDisable(true);
+        Task<Void> task = new Task<>() {
+            @Override
+            protected Void call() throws Exception {
+                JsonObject body = authenticatedBody();
+                Integer repostId = ownReposts.get(tweet.getId());
+                if (repostId == null) {
+                    body.addProperty("content", blankToEmpty(tweet.getContent()).isBlank()
+                            ? "Reposted a tweet" : tweet.getContent());
+                    body.addProperty("retweetToId", tweet.getId());
+                    send(RequestType.CREATE_TWEET, body);
+                } else {
+                    body.addProperty("tweetId", repostId);
+                    send(RequestType.DELETE_TWEET, body);
+                }
+                return null;
+            }
+        };
+        task.setOnSucceeded(event -> loadProfile());
+        task.setOnFailed(event -> button.setDisable(false));
+        start(task, "toggle-profile-repost");
     }
 
     private void toggleLike(Tweet tweet, Button button) {
@@ -475,7 +618,12 @@ public class ProfileController {
     }
 
     private void styleLikeButton(Button button, Tweet tweet) {
-        button.setText((tweet.isLikedByCurrentUser() ? "❤ " : "♡ ") + tweet.getLikesCount());
+        button.setText(String.valueOf(tweet.getLikesCount()));
+        UiIconHelper.apply(
+                button,
+                UiIconHelper.Icon.HEART,
+                tweet.isLikedByCurrentUser() ? "#f91880" : "#71767b"
+        );
         button.setStyle(tweet.isLikedByCurrentUser() ? LIKE_STYLE : ACTION_STYLE);
     }
 
@@ -609,6 +757,8 @@ public class ProfileController {
             List<Tweet> tweets,
             int followingCount,
             int followersCount,
-            boolean following
+            boolean following,
+            Map<Integer, Integer> ownReposts,
+            Map<Integer, TweetStatisticsService.Statistics> tweetStatistics
     ) {}
 }

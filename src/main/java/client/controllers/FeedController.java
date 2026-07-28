@@ -7,6 +7,7 @@ import client.TweetMediaHelper;
 import client.TweetTimeFormatter;
 import client.UserSession;
 import client.UserAvatarHelper;
+import client.UiIconHelper;
 import client.network.ServerConnection;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
@@ -352,10 +353,11 @@ public class FeedController {
 
         if (timelineTweet.getRetweetToId() != null) {
             User reposter = usersById.get(timelineTweet.getAuthorId());
-            Label reposted = new Label("🔁 " + displayName(reposter, timelineTweet) + " reposted");
+            Label reposted = new Label(displayName(reposter, timelineTweet) + " reposted");
             reposted.setTextFill(Color.web("#71767b"));
             reposted.setFont(Font.font("System", 13));
             reposted.setStyle("-fx-padding: 0 0 0 54;");
+            reposted.setGraphic(UiIconHelper.create(UiIconHelper.Icon.REPOST, "#71767b", 0.62));
             card.getChildren().add(reposted);
         }
 
@@ -386,6 +388,14 @@ public class FeedController {
         timestamp.setFont(Font.font("System", 14));
 
         header.getChildren().addAll(displayName, username, timestamp);
+        if (currentUser != null && timelineTweet.getAuthorId() == currentUser.getId()) {
+            Region headerSpacer = new Region();
+            HBox.setHgrow(headerSpacer, Priority.ALWAYS);
+            Button deleteButton = actionButton("🗑");
+            deleteButton.setStyle(actionStyle("#f4212e"));
+            deleteButton.setOnAction(event -> deleteOwnedTweet(timelineTweet, deleteButton));
+            header.getChildren().addAll(headerSpacer, deleteButton);
+        }
         if (author != null) {
             header.setStyle("-fx-cursor: hand;");
             header.setOnMouseClicked(event -> openProfile(author));
@@ -445,6 +455,7 @@ public class FeedController {
         Button retweetButton = actionButton("🔁 " + reposts.size());
         if (ownRepost != null) {
             retweetButton.setStyle(actionStyle("#00ba7c"));
+            UiIconHelper.apply(retweetButton, UiIconHelper.Icon.REPOST, "#00ba7c");
         }
         retweetButton.setOnAction(event -> toggleRepost(tweet, ownRepost, retweetButton));
 
@@ -453,6 +464,7 @@ public class FeedController {
         );
         if (tweet.isLikedByCurrentUser()) {
             likeButton.setStyle(actionStyle("#f91880"));
+            UiIconHelper.apply(likeButton, UiIconHelper.Icon.HEART, "#f91880");
         }
         likeButton.setOnAction(event -> toggleLike(tweet, likeButton));
         actions.getChildren().addAll(replyButton, retweetButton, likeButton);
@@ -476,6 +488,15 @@ public class FeedController {
         Label handle = new Label("@" + username(author, reply));
         handle.setTextFill(Color.web("#71767b"));
         header.getChildren().addAll(name, handle);
+        User currentUser = UserSession.getInstance().getCurrentUser();
+        if (currentUser != null && reply.getAuthorId() == currentUser.getId()) {
+            Region spacer = new Region();
+            HBox.setHgrow(spacer, Priority.ALWAYS);
+            Button delete = actionButton("🗑");
+            delete.setStyle(actionStyle("#f4212e"));
+            delete.setOnAction(event -> deleteOwnedTweet(reply, delete));
+            header.getChildren().addAll(spacer, delete);
+        }
         if (author != null) {
             header.setOnMouseClicked(event -> openProfile(author));
             header.setStyle("-fx-cursor: hand;");
@@ -577,8 +598,33 @@ public class FeedController {
     }
 
     private Button actionButton(String text) {
-        Button button = new Button(text);
+        Button button = new Button();
+        String portableText = text;
+        UiIconHelper.Icon icon = null;
+        String color = "#71767b";
+        if (text.startsWith("💬")) {
+            icon = UiIconHelper.Icon.REPLY;
+            portableText = text.substring("💬".length()).trim();
+        } else if (text.startsWith("🔁")) {
+            icon = UiIconHelper.Icon.REPOST;
+            portableText = text.substring("🔁".length()).trim();
+        } else if (text.startsWith("❤") || text.startsWith("♡")) {
+            icon = UiIconHelper.Icon.HEART;
+            portableText = text.substring(1).trim();
+        } else if (text.startsWith("🗑")) {
+            icon = UiIconHelper.Icon.TRASH;
+            portableText = "Delete";
+            color = "#f4212e";
+        } else if (text.startsWith("🖼")) {
+            icon = UiIconHelper.Icon.IMAGE;
+            portableText = "";
+            color = "#1d9bf0";
+        }
+        button.setText(portableText);
         button.setStyle(actionStyle("#71767b"));
+        if (icon != null) {
+            UiIconHelper.apply(button, icon, color);
+        }
         return button;
     }
 
@@ -601,6 +647,21 @@ public class FeedController {
         task.setOnSucceeded(event -> loadTimeline());
         task.setOnFailed(event -> button.setDisable(false));
         startTask(task, "toggle-feed-like");
+    }
+
+    private void deleteOwnedTweet(Tweet tweet, Button button) {
+        User current = UserSession.getInstance().getCurrentUser();
+        if (current == null || tweet.getAuthorId() != current.getId()) {
+            return;
+        }
+        button.setDisable(true);
+        Task<Void> task = requestTask(
+                RequestType.DELETE_TWEET,
+                body -> body.addProperty("tweetId", tweet.getId())
+        );
+        task.setOnSucceeded(event -> loadTimeline());
+        task.setOnFailed(event -> button.setDisable(false));
+        startTask(task, "delete-owned-feed-tweet");
     }
 
     private void toggleRepost(Tweet tweet, Tweet ownRepost, Button button) {

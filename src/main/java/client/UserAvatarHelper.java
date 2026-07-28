@@ -1,13 +1,11 @@
 package client;
 
 import javafx.scene.Node;
-import javafx.scene.control.Label;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
-import javafx.scene.text.Font;
 import shared.models.User;
 
 public final class UserAvatarHelper {
@@ -23,9 +21,9 @@ public final class UserAvatarHelper {
         Circle background = new Circle(size / 2, Color.web("#262626"));
         background.setStroke(Color.web("#333333"));
 
-        Label placeholder = new Label("👤");
-        placeholder.setFont(Font.font(Math.max(14, size * .48)));
-        placeholder.setTextFill(Color.web("#71767b"));
+        Node placeholder = UiIconHelper.create(
+                UiIconHelper.Icon.USER, "#71767b", Math.max(.65, size / 34)
+        );
         avatar.getChildren().addAll(background, placeholder);
 
         String url = user == null ? null : user.getAvatarUrl();

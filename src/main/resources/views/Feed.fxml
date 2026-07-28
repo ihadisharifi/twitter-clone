@@ -33,7 +33,7 @@
                                         <StackPane>
                                             <children>
                                                 <Circle fx:id="topAvatarPlaceholder" fill="#262626" radius="16.0" stroke="#333333" strokeWidth="1.0" />
-                                                <Label fx:id="topAvatarPlaceholderIcon" style="-fx-text-fill: #71767b; -fx-font-size: 14;" text="👤" />
+                                                <Label fx:id="topAvatarPlaceholderIcon" style="-fx-text-fill: #71767b; -fx-font-size: 14; -fx-font-weight: bold;" text="U" />
                                                 <ImageView fx:id="topAvatarImage" fitHeight="32.0" fitWidth="32.0" managed="false" preserveRatio="false" visible="false" />
                                             </children>
                                         </StackPane>
@@ -60,22 +60,22 @@
                 <!-- Bottom navigation bar (Home active) -->
                 <HBox alignment="CENTER" prefHeight="56.0" spacing="0.0" styleClass="bottom-bar">
                     <children>
-                        <Button maxWidth="Infinity" minHeight="56.0" onAction="#handleGoToHome" styleClass="bottom-nav-item, bottom-nav-active" text="🏠" HBox.hgrow="ALWAYS">
+                        <Button maxWidth="Infinity" minHeight="56.0" onAction="#handleGoToHome" styleClass="bottom-nav-item, bottom-nav-active" text="Home" HBox.hgrow="ALWAYS">
                             <font>
                                 <Font size="20.0" />
                             </font>
                         </Button>
-                        <Button maxWidth="Infinity" minHeight="56.0" onAction="#handleGoToSearch" styleClass="bottom-nav-item" text="🔍" HBox.hgrow="ALWAYS">
+                        <Button maxWidth="Infinity" minHeight="56.0" onAction="#handleGoToSearch" styleClass="bottom-nav-item" text="Search" HBox.hgrow="ALWAYS">
                             <font>
                                 <Font size="20.0" />
                             </font>
                         </Button>
-                        <Button maxWidth="Infinity" minHeight="56.0" onAction="#handleCreatePost" styleClass="bottom-nav-item" text="➕" HBox.hgrow="ALWAYS">
+                        <Button maxWidth="Infinity" minHeight="56.0" onAction="#handleCreatePost" styleClass="bottom-nav-item" text="Post" HBox.hgrow="ALWAYS">
                             <font>
                                 <Font size="20.0" />
                             </font>
                         </Button>
-                        <Button maxWidth="Infinity" minHeight="56.0" onAction="#handleGoToProfile" styleClass="bottom-nav-item" text="👤" HBox.hgrow="ALWAYS">
+                        <Button maxWidth="Infinity" minHeight="56.0" onAction="#handleGoToProfile" styleClass="bottom-nav-item" text="Profile" HBox.hgrow="ALWAYS">
                             <font>
                                 <Font size="20.0" />
                             </font>
@@ -100,7 +100,7 @@
                                 <StackPane alignment="CENTER_LEFT" prefHeight="48.0">
                                     <children>
                                         <Circle fx:id="drawerAvatarPlaceholder" fill="#262626" radius="24.0" stroke="#333333" strokeWidth="1.0" />
-                                        <Label fx:id="drawerAvatarPlaceholderIcon" style="-fx-text-fill: #71767b; -fx-font-size: 22;" text="👤" />
+                                        <Label fx:id="drawerAvatarPlaceholderIcon" style="-fx-text-fill: #71767b; -fx-font-size: 22; -fx-font-weight: bold;" text="U" />
                                         <ImageView fx:id="drawerAvatarImage" fitHeight="48.0" fitWidth="48.0" managed="false" preserveRatio="false" visible="false" />
                                     </children>
                                 </StackPane>
@@ -138,10 +138,10 @@
                         <!-- Drawer menu items -->
                         <VBox spacing="4.0" style="-fx-padding: 8 0 0 0;" VBox.vgrow="ALWAYS">
                             <children>
-                                <Button alignment="BASELINE_LEFT" maxWidth="Infinity" minHeight="48.0" onAction="#handleGoToProfile" styleClass="drawer-menu-item" text="👤  Profile" />
-                                <Button alignment="BASELINE_LEFT" maxWidth="Infinity" minHeight="48.0" onAction="#handleGoToBookmarks" styleClass="drawer-menu-item" text="🔖  Bookmarks" />
+                                <Button alignment="BASELINE_LEFT" maxWidth="Infinity" minHeight="48.0" onAction="#handleGoToProfile" styleClass="drawer-menu-item" text="Profile" />
+                                <Button alignment="BASELINE_LEFT" maxWidth="Infinity" minHeight="48.0" onAction="#handleGoToBookmarks" styleClass="drawer-menu-item" text="Bookmarks" />
                                 <Region VBox.vgrow="ALWAYS" />
-                                <Button alignment="BASELINE_LEFT" maxWidth="Infinity" minHeight="48.0" onAction="#handleLogout" styleClass="drawer-menu-item, drawer-logout" text="🚪  Log out" />
+                                <Button alignment="BASELINE_LEFT" maxWidth="Infinity" minHeight="48.0" onAction="#handleLogout" styleClass="drawer-menu-item, drawer-logout" text="Log out" />
                             </children>
                         </VBox>
                     </children>

@@ -38,7 +38,7 @@
                         <StackPane>
                             <children>
                                 <Circle fill="#262626" radius="20.0" stroke="#333333" strokeWidth="1.0" />
-                                <Label fx:id="avatarLabel" style="-fx-text-fill: #71767b; -fx-font-size: 18px;" text="👤" />
+                                <Label fx:id="avatarLabel" style="-fx-text-fill: #71767b; -fx-font-size: 18px; -fx-font-weight: bold;" text="U" />
                             </children>
                         </StackPane>
                     </children>
@@ -80,8 +80,8 @@
             <children>
                 <HBox alignment="CENTER_LEFT" spacing="16.0">
                     <children>
-                        <Button onAction="#handleAttachMedia" style="-fx-background-color: transparent; -fx-text-fill: #1d9bf0; -fx-font-size: 18px; -fx-padding: 4 8; -fx-cursor: hand;" text="🖼️" />
-                        <Button fx:id="emojiButton" onAction="#handleEmojiClick" style="-fx-background-color: transparent; -fx-text-fill: #1d9bf0; -fx-font-size: 18px; -fx-padding: 4 8; -fx-cursor: hand;" text="😊" />
+                        <Button onAction="#handleAttachMedia" style="-fx-background-color: transparent; -fx-text-fill: #1d9bf0; -fx-font-size: 13px; -fx-padding: 4 8; -fx-cursor: hand;" text="Media" />
+                        <Button fx:id="emojiButton" onAction="#handleEmojiClick" style="-fx-background-color: transparent; -fx-text-fill: #1d9bf0; -fx-font-size: 13px; -fx-padding: 4 8; -fx-cursor: hand;" text="Emoji" />
                     </children>
                 </HBox>
             </children>
