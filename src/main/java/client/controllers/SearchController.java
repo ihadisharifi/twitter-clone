@@ -50,6 +50,9 @@ public class SearchController {
     @FXML
     private Label drawerUsername;
 
+    @FXML
+    private Button themeToggleButton;
+
     private final List<TimestampLabel> liveTimestamps = new ArrayList<>();
     private Timeline timeRefreshTimeline;
 
@@ -65,6 +68,7 @@ public class SearchController {
     @FXML
     public void initialize() {
         SideDrawerHelper.populateUserHeader(drawerDisplayName, drawerUsername);
+        client.ThemeManager.updateThemeButton(themeToggleButton);
         TweetStore.getInstance().seedIfEmpty();
 
         if (searchInputField != null) {
@@ -75,26 +79,33 @@ public class SearchController {
         startTimestampRefresh();
     }
 
+    @FXML
+    private void handleToggleTheme() {
+        if (drawerOverlay != null && drawerOverlay.getScene() != null) {
+            client.ThemeManager.toggleTheme(drawerOverlay.getScene());
+            client.ThemeManager.updateThemeButton(themeToggleButton);
+        }
+    }
+
     private void startTimestampRefresh() {
         if (timeRefreshTimeline != null) {
             timeRefreshTimeline.stop();
         }
-        timeRefreshTimeline = new Timeline(
-                new KeyFrame(Duration.seconds(15), e -> {
-                    for (TimestampLabel entry : liveTimestamps) {
-                        entry.label.setText(TweetTimeFormatter.formatFeedDot(entry.createdAt));
-                    }
-                })
-        );
+        timeRefreshTimeline = new Timeline(new KeyFrame(Duration.seconds(30), e -> refreshLiveTimestamps()));
         timeRefreshTimeline.setCycleCount(Animation.INDEFINITE);
         timeRefreshTimeline.play();
     }
 
+    private void refreshLiveTimestamps() {
+        for (TimestampLabel entry : liveTimestamps) {
+            entry.label.setText("· " + TweetTimeFormatter.formatRelative(entry.createdAt));
+        }
+    }
+
     private Label createTimestampLabel(Instant createdAt) {
-        Label timestamp = new Label(TweetTimeFormatter.formatFeedDot(createdAt));
+        Label timestamp = new Label("· " + TweetTimeFormatter.formatRelative(createdAt));
+        timestamp.getStyleClass().add("tweet-timestamp");
         timestamp.setFont(Font.font("System", 14));
-        timestamp.setTextFill(Color.web("#71767b"));
-        Tooltip.install(timestamp, new Tooltip(TweetTimeFormatter.formatAbsolute(createdAt)));
         liveTimestamps.add(new TimestampLabel(timestamp, createdAt));
         return timestamp;
     }
@@ -117,22 +128,21 @@ public class SearchController {
     }
 
     private void performSearch(String query) {
-        searchResultsContainer.getChildren().clear();
         liveTimestamps.clear();
 
-        if (query == null || query.trim().isEmpty()) {
+        if (query == null || query.isBlank()) {
             renderEmptyState("Search X", "Search for posts, topics, or accounts");
             return;
         }
 
-        List<StoredTweet> matches = TweetStore.getInstance().searchTweets(query);
-
-        if (matches.isEmpty()) {
-            renderEmptyState("No results for \"" + query.trim() + "\"", "Try searching for another term or username");
+        List<StoredTweet> results = TweetStore.getInstance().searchTweets(query.trim());
+        if (results.isEmpty()) {
+            renderEmptyState("No results for \"" + query.trim() + "\"", "Try searching for something else");
             return;
         }
 
-        for (StoredTweet tweet : matches) {
+        searchResultsContainer.getChildren().clear();
+        for (StoredTweet tweet : results) {
             renderSearchTweetCard(tweet);
         }
     }
@@ -146,11 +156,11 @@ public class SearchController {
         iconLabel.setStyle("-fx-font-size: 48px;");
 
         Label titleLabel = new Label(title);
-        titleLabel.setTextFill(Color.WHITE);
+        titleLabel.getStyleClass().add("primary-text");
         titleLabel.setFont(Font.font("System", FontWeight.BOLD, 22));
 
         Label subLabel = new Label(subtitle);
-        subLabel.setTextFill(Color.web("#71767b"));
+        subLabel.getStyleClass().add("secondary-text");
         subLabel.setFont(Font.font("System", 14));
         subLabel.setWrapText(true);
 
@@ -160,14 +170,14 @@ public class SearchController {
 
     private void renderSearchTweetCard(StoredTweet tweet) {
         VBox card = new VBox(6);
-        card.setStyle("-fx-border-color: #333333; -fx-border-width: 0 0 1 0; -fx-padding: 12 16 12 16;");
+        card.getStyleClass().add("tweet-card");
 
         HBox tweetRow = new HBox(12);
 
         VBox avatarBox = new VBox();
         Label avatar = new Label("👤");
         avatar.setFont(Font.font("System", 24));
-        avatar.setTextFill(Color.web("#71767b"));
+        avatar.getStyleClass().add("secondary-text");
         avatarBox.getChildren().add(avatar);
 
         VBox contentStack = new VBox(4);
@@ -175,11 +185,11 @@ public class SearchController {
 
         HBox headerRow = new HBox(8);
         Label displayName = new Label(tweet.getAuthorDisplayName() != null ? tweet.getAuthorDisplayName() : "User");
-        displayName.setTextFill(Color.WHITE);
+        displayName.getStyleClass().add("tweet-author");
         displayName.setFont(Font.font("System", FontWeight.BOLD, 15));
 
         Label userHandle = new Label("@" + (tweet.getAuthorUsername() != null ? tweet.getAuthorUsername() : "user"));
-        userHandle.setTextFill(Color.web("#71767b"));
+        userHandle.getStyleClass().add("tweet-username");
         userHandle.setFont(Font.font("System", 14));
 
         Label timestamp = createTimestampLabel(tweet.getCreatedAt());
@@ -187,7 +197,7 @@ public class SearchController {
         headerRow.getChildren().addAll(displayName, userHandle, timestamp);
 
         Label bodyText = new Label(tweet.getContent());
-        bodyText.setTextFill(Color.web("#e7e9ea"));
+        bodyText.getStyleClass().add("tweet-text");
         bodyText.setFont(Font.font("System", 15));
         bodyText.setWrapText(true);
 

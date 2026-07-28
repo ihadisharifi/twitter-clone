@@ -88,6 +88,9 @@ public class ProfileController {
     @FXML
     private StackPane bannerContainer;
 
+    @FXML
+    private Button themeToggleButton;
+
     private final List<TimestampLabel> liveTimestamps = new ArrayList<>();
     private Timeline timeRefreshTimeline;
 
@@ -111,8 +114,17 @@ public class ProfileController {
     @FXML
     public void initialize() {
         SideDrawerHelper.populateUserHeader(drawerDisplayName, drawerUsername);
+        client.ThemeManager.updateThemeButton(themeToggleButton);
         refreshProfileData();
         startTimestampRefresh();
+    }
+
+    @FXML
+    private void handleToggleTheme() {
+        if (drawerOverlay != null && drawerOverlay.getScene() != null) {
+            client.ThemeManager.toggleTheme(drawerOverlay.getScene());
+            client.ThemeManager.updateThemeButton(themeToggleButton);
+        }
     }
 
     private void startTimestampRefresh() {
@@ -856,10 +868,10 @@ public class ProfileController {
 
             try {
                 DialogPane dialogPane = alert.getDialogPane();
-                if (getClass().getResource("/styles/twitter.css") != null) {
-                    dialogPane.getStylesheets().add(getClass().getResource("/styles/twitter.css").toExternalForm());
+                String themeCss = client.ThemeManager.getResourceUrl(UserSession.getInstance().getTheme().getCssPath());
+                if (themeCss != null) {
+                    dialogPane.getStylesheets().add(themeCss);
                 }
-                dialogPane.setStyle("-fx-background-color: #000000; -fx-border-color: #333333; -fx-border-width: 1px;");
             } catch (Exception ignored) {}
 
             Optional<ButtonType> result = alert.showAndWait();
@@ -893,10 +905,10 @@ public class ProfileController {
 
             try {
                 DialogPane dialogPane = alert.getDialogPane();
-                if (getClass().getResource("/styles/twitter.css") != null) {
-                    dialogPane.getStylesheets().add(getClass().getResource("/styles/twitter.css").toExternalForm());
+                String themeCss = client.ThemeManager.getResourceUrl(UserSession.getInstance().getTheme().getCssPath());
+                if (themeCss != null) {
+                    dialogPane.getStylesheets().add(themeCss);
                 }
-                dialogPane.setStyle("-fx-background-color: #000000; -fx-border-color: #333333; -fx-border-width: 1px;");
             } catch (Exception ignored) {}
 
             Optional<ButtonType> result = alert.showAndWait();

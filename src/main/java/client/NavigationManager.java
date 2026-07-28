@@ -29,6 +29,7 @@ public class NavigationManager {
 
             // Re-bind the window scene content view tree context
             Scene newScene = new Scene(rootContainer, 600, 650);
+            ThemeManager.applyTheme(newScene);
             primaryStage.setScene(newScene);
 
         } catch (IOException e) {

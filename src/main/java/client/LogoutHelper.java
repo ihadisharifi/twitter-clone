@@ -27,10 +27,10 @@ public final class LogoutHelper {
 
         try {
             DialogPane dialogPane = alert.getDialogPane();
-            if (LogoutHelper.class.getResource("/styles/twitter.css") != null) {
-                dialogPane.getStylesheets().add(LogoutHelper.class.getResource("/styles/twitter.css").toExternalForm());
+            String themeCss = ThemeManager.getResourceUrl(UserSession.getInstance().getTheme().getCssPath());
+            if (themeCss != null) {
+                dialogPane.getStylesheets().add(themeCss);
             }
-            dialogPane.setStyle("-fx-background-color: #000000; -fx-border-color: #333333; -fx-border-width: 1px;");
         } catch (Exception e) {
             // Ignore optional styling faults to guarantee dialog functionality
         }

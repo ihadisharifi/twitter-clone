@@ -1,0 +1,388 @@
+/* Dark Theme (X Dark Look) */
+
+.root, .app-root {
+    -fx-background-color: #000000;
+    -fx-background: #000000;
+}
+
+/* Base ScrollPane & Viewport styling */
+.scroll-pane, .scroll-pane > .viewport {
+    -fx-background-color: #000000;
+    -fx-background: #000000;
+}
+.scroll-bar:vertical, .scroll-bar:horizontal {
+    -fx-background-color: transparent;
+}
+.scroll-bar:vertical .thumb, .scroll-bar:horizontal .thumb {
+    -fx-background-color: #333333;
+    -fx-background-radius: 4px;
+}
+
+/* Header & Top Bar */
+.top-bar {
+    -fx-background-color: #000000;
+    -fx-border-color: #333333;
+    -fx-border-width: 0 0 1 0;
+    -fx-min-height: 54px;
+    -fx-pref-height: 54px;
+    -fx-max-height: 54px;
+}
+
+.page-header-bar {
+    -fx-background-color: #000000;
+    -fx-border-color: #333333;
+    -fx-border-width: 0 0 1 0;
+}
+
+.search-header-bar {
+    -fx-background-color: #000000;
+    -fx-border-color: #333333;
+    -fx-border-width: 0 0 1 0;
+}
+
+.x-logo {
+    -fx-text-fill: #ffffff;
+}
+
+.page-header-title {
+    -fx-text-fill: #ffffff;
+    -fx-font-weight: bold;
+}
+
+/* Bottom Bar */
+.bottom-bar {
+    -fx-background-color: #000000;
+    -fx-border-color: #333333;
+    -fx-border-width: 1 0 0 0;
+    -fx-min-height: 56px;
+    -fx-pref-height: 56px;
+    -fx-max-height: 56px;
+}
+
+.bottom-nav-item {
+    -fx-background-color: transparent;
+    -fx-text-fill: #71767b;
+    -fx-background-radius: 0;
+    -fx-font-size: 20px;
+    -fx-cursor: hand;
+    -fx-font-weight: normal;
+}
+
+.bottom-nav-item:hover {
+    -fx-background-color: rgba(255, 255, 255, 0.06);
+    -fx-text-fill: #e7e9ea;
+}
+
+.bottom-nav-active {
+    -fx-text-fill: #ffffff;
+    -fx-font-weight: bold;
+}
+
+/* Input Controls */
+.text-field, .password-field {
+    -fx-background-color: #000000;
+    -fx-text-fill: #ffffff;
+    -fx-prompt-text-fill: #71767b;
+    -fx-border-color: #333333;
+    -fx-border-radius: 4px;
+    -fx-background-radius: 4px;
+    -fx-highlight-fill: #1d9bf0;
+}
+
+.text-field:focused, .password-field:focused {
+    -fx-border-color: #1d9bf0;
+}
+
+.search-input-field {
+    -fx-background-color: #16181c;
+    -fx-text-fill: #ffffff;
+    -fx-prompt-text-fill: #71767b;
+    -fx-border-color: #2f3336;
+    -fx-border-radius: 20px;
+    -fx-background-radius: 20px;
+}
+
+.search-input-field:focused {
+    -fx-border-color: #1d9bf0;
+    -fx-background-color: #000000;
+}
+
+.text-area {
+    -fx-background-color: #000000;
+    -fx-text-fill: #ffffff;
+}
+
+.text-area .content {
+    -fx-background-color: #000000;
+}
+
+/* Buttons */
+.button {
+    -fx-background-color: #ffffff;
+    -fx-text-fill: #000000;
+    -fx-background-radius: 20px;
+    -fx-font-weight: bold;
+    -fx-cursor: hand;
+}
+
+.button:hover {
+    -fx-background-color: #e6e6e6;
+}
+
+.avatar-button {
+    -fx-background-color: transparent;
+    -fx-background-radius: 50%;
+    -fx-padding: 2 2 2 2;
+    -fx-cursor: hand;
+    -fx-content-display: graphic-only;
+}
+
+.avatar-button:hover {
+    -fx-background-color: rgba(255, 255, 255, 0.08);
+}
+
+.back-button {
+    -fx-background-color: transparent;
+    -fx-text-fill: #ffffff;
+    -fx-cursor: hand;
+}
+
+.back-button:hover {
+    -fx-background-color: rgba(255, 255, 255, 0.08);
+    -fx-background-radius: 50%;
+}
+
+.banner-back-button {
+    -fx-background-color: rgba(0, 0, 0, 0.55);
+    -fx-text-fill: #ffffff;
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-background-radius: 50%;
+    -fx-min-width: 34px;
+    -fx-min-height: 34px;
+    -fx-pref-width: 34px;
+    -fx-pref-height: 34px;
+    -fx-max-width: 34px;
+    -fx-max-height: 34px;
+    -fx-padding: 0;
+    -fx-cursor: hand;
+}
+
+.banner-back-button:hover {
+    -fx-background-color: rgba(0, 0, 0, 0.75);
+    -fx-text-fill: #ffffff;
+}
+
+.profile-banner {
+    -fx-background-color: #333333;
+    -fx-min-height: 120px;
+    -fx-pref-height: 120px;
+    -fx-max-height: 120px;
+}
+
+/* Side Drawer */
+.drawer-overlay {
+    -fx-background-color: transparent;
+}
+
+.drawer-panel {
+    -fx-background-color: #000000;
+    -fx-border-color: #333333;
+    -fx-border-width: 0 1 0 0;
+    -fx-min-width: 280px;
+    -fx-pref-width: 300px;
+    -fx-max-width: 320px;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.55), 18, 0.2, 4, 0);
+}
+
+.drawer-dimmer {
+    -fx-background-color: rgba(91, 112, 131, 0.40);
+    -fx-cursor: hand;
+}
+
+.drawer-header {
+    -fx-background-color: #000000;
+}
+
+.drawer-display-name {
+    -fx-text-fill: #e7e9ea;
+}
+
+.drawer-username {
+    -fx-text-fill: #71767b;
+}
+
+.drawer-stat-count {
+    -fx-text-fill: #e7e9ea;
+    -fx-font-weight: bold;
+    -fx-font-size: 14px;
+}
+
+.drawer-stat-label {
+    -fx-text-fill: #71767b;
+    -fx-font-size: 14px;
+}
+
+.drawer-menu-item {
+    -fx-background-color: transparent;
+    -fx-text-fill: #e7e9ea;
+    -fx-font-size: 18px;
+    -fx-font-weight: bold;
+    -fx-background-radius: 0;
+    -fx-padding: 0 16 0 16;
+    -fx-alignment: CENTER_LEFT;
+    -fx-cursor: hand;
+}
+
+.drawer-menu-item:hover {
+    -fx-background-color: rgba(255, 255, 255, 0.08);
+    -fx-text-fill: #e7e9ea;
+}
+
+.drawer-logout {
+    -fx-text-fill: #f4212e;
+}
+
+.drawer-logout:hover {
+    -fx-text-fill: #f4212e;
+    -fx-background-color: rgba(244, 33, 46, 0.10);
+}
+
+/* Dynamic Tweet Cards & Text */
+.tweet-card {
+    -fx-background-color: #000000;
+    -fx-border-color: #333333;
+    -fx-border-width: 0 0 1 0;
+}
+
+.tweet-card-nested {
+    -fx-background-color: #000000;
+    -fx-border-color: #222222;
+    -fx-border-width: 0 0 1 0;
+}
+
+.tweet-author {
+    -fx-text-fill: #ffffff;
+    -fx-font-weight: bold;
+}
+
+.tweet-username {
+    -fx-text-fill: #71767b;
+}
+
+.tweet-timestamp {
+    -fx-text-fill: #71767b;
+}
+
+.tweet-text {
+    -fx-text-fill: #e7e9ea;
+}
+
+.tweet-repost-label {
+    -fx-text-fill: #71767b;
+}
+
+.tweet-reply-label {
+    -fx-text-fill: #1d9bf0;
+}
+
+/* General Text Helpers */
+.primary-text {
+    -fx-text-fill: #ffffff;
+}
+
+.secondary-text {
+    -fx-text-fill: #71767b;
+}
+
+.body-text {
+    -fx-text-fill: #e7e9ea;
+}
+
+.section-divider {
+    -fx-background-color: #333333;
+}
+
+/* Profile specific styles */
+.profile-name {
+    -fx-text-fill: #ffffff;
+    -fx-font-weight: bold;
+}
+
+.profile-handle {
+    -fx-text-fill: #71767b;
+}
+
+.profile-bio {
+    -fx-text-fill: #ffffff;
+}
+
+.profile-stat-count {
+    -fx-text-fill: #ffffff;
+    -fx-font-weight: bold;
+}
+
+.profile-stat-label {
+    -fx-text-fill: #71767b;
+}
+
+.profile-tab-bar {
+    -fx-border-color: #333333;
+    -fx-border-width: 0 0 1 0;
+}
+
+.profile-tab-active {
+    -fx-text-fill: #ffffff;
+    -fx-font-weight: bold;
+    -fx-border-color: #1d9bf0;
+    -fx-border-width: 0 0 3 0;
+}
+
+/* Compose specific styles */
+.compose-cancel-button {
+    -fx-background-color: transparent;
+    -fx-text-fill: #ffffff;
+    -fx-font-size: 15px;
+    -fx-cursor: hand;
+}
+
+.compose-cancel-button:hover {
+    -fx-background-color: rgba(255, 255, 255, 0.08);
+}
+
+.compose-post-button {
+    -fx-background-color: #1d9bf0;
+    -fx-text-fill: #ffffff;
+    -fx-background-radius: 20px;
+    -fx-font-weight: bold;
+    -fx-font-size: 14px;
+    -fx-cursor: hand;
+}
+
+.compose-post-button:hover {
+    -fx-background-color: #1a8cd8;
+}
+
+.compose-toolbar {
+    -fx-border-color: #333333;
+    -fx-border-width: 1 0 0 0;
+}
+
+/* Dialog Panes */
+.dialog-pane {
+    -fx-background-color: #000000;
+    -fx-border-color: #333333;
+    -fx-border-width: 1px;
+}
+
+.dialog-pane .label {
+    -fx-text-fill: #ffffff;
+}
+
+.dialog-pane .header-panel {
+    -fx-background-color: #000000;
+}
+
+.dialog-pane .content {
+    -fx-text-fill: #e7e9ea;
+}

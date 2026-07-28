@@ -10,6 +10,7 @@ public class UserSession {
 
     private String avatarImagePath;
     private String bannerImagePath;
+    private ThemeManager.Theme activeTheme = ThemeManager.Theme.DARK;
 
     private UserSession() {}
 
@@ -91,4 +92,18 @@ public class UserSession {
 
     public User getCurrentUser() { return currentUser; }
     public Session getCurrentSession() { return currentSession; }
+
+    public ThemeManager.Theme getTheme() {
+        return activeTheme != null ? activeTheme : ThemeManager.Theme.DARK;
+    }
+
+    public void setTheme(ThemeManager.Theme theme) {
+        if (theme != null) {
+            this.activeTheme = theme;
+        }
+    }
+
+    public boolean isDarkMode() {
+        return getTheme() == ThemeManager.Theme.DARK;
+    }
 }

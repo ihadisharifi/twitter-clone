@@ -56,6 +56,9 @@ public class BookmarksController {
     @FXML
     private Label drawerUsername;
 
+    @FXML
+    private Button themeToggleButton;
+
     private final List<TimestampLabel> liveTimestamps = new ArrayList<>();
     private Timeline timeRefreshTimeline;
 
@@ -79,8 +82,17 @@ public class BookmarksController {
     @FXML
     public void initialize() {
         SideDrawerHelper.populateUserHeader(drawerDisplayName, drawerUsername);
+        client.ThemeManager.updateThemeButton(themeToggleButton);
         loadBookmarks();
         startTimestampRefresh();
+    }
+
+    @FXML
+    private void handleToggleTheme() {
+        if (drawerOverlay != null && drawerOverlay.getScene() != null) {
+            client.ThemeManager.toggleTheme(drawerOverlay.getScene());
+            client.ThemeManager.updateThemeButton(themeToggleButton);
+        }
     }
 
     private void loadBookmarks() {
@@ -101,15 +113,15 @@ public class BookmarksController {
     }
 
     private void renderEmptyState() {
-        VBox emptyBox = new VBox(8);
+        VBox emptyBox = new VBox(12);
         emptyBox.setStyle("-fx-padding: 80 40 40 40; -fx-alignment: center;");
 
         Label titleLabel = new Label("No Bookmarks yet");
-        titleLabel.setTextFill(Color.WHITE);
+        titleLabel.getStyleClass().add("primary-text");
         titleLabel.setFont(Font.font("System", FontWeight.BOLD, 22));
 
         Label subLabel = new Label("Bookmark posts to easily find them again in the future.");
-        subLabel.setTextFill(Color.web("#71767b"));
+        subLabel.getStyleClass().add("secondary-text");
         subLabel.setFont(Font.font("System", 14));
         subLabel.setWrapText(true);
 
@@ -119,11 +131,11 @@ public class BookmarksController {
 
     private void renderBookmarkTweetCard(StoredTweet tweet) {
         VBox card = new VBox(6);
-        card.setStyle("-fx-border-color: #333333; -fx-border-width: 0 0 1 0; -fx-padding: 12 16 12 16;");
+        card.getStyleClass().add("tweet-card");
 
         if (tweet.isRetweet()) {
             Label repostLabel = new Label("🔁 " + safeName(tweet.getAuthorDisplayName()) + " reposted");
-            repostLabel.setTextFill(Color.web("#71767b"));
+            repostLabel.getStyleClass().add("tweet-repost-label");
             repostLabel.setFont(Font.font("System", 13));
             card.getChildren().add(repostLabel);
         }
@@ -132,7 +144,7 @@ public class BookmarksController {
                     ? "@" + tweet.getOriginalAuthorUsername()
                     : "someone";
             Label replyLabel = new Label("💬 Replying to " + replyTo);
-            replyLabel.setTextFill(Color.web("#1d9bf0"));
+            replyLabel.getStyleClass().add("tweet-reply-label");
             replyLabel.setFont(Font.font("System", 13));
             card.getChildren().add(replyLabel);
         }
@@ -142,7 +154,7 @@ public class BookmarksController {
         VBox avatarBox = new VBox();
         Label avatar = new Label("👤");
         avatar.setFont(Font.font("System", 24));
-        avatar.setTextFill(Color.web("#71767b"));
+        avatar.getStyleClass().add("secondary-text");
         avatarBox.getChildren().add(avatar);
 
         VBox contentStack = new VBox(4);
@@ -157,11 +169,11 @@ public class BookmarksController {
 
         HBox headerRow = new HBox(8);
         Label displayName = new Label(headerName);
-        displayName.setTextFill(Color.WHITE);
+        displayName.getStyleClass().add("tweet-author");
         displayName.setFont(Font.font("System", FontWeight.BOLD, 15));
 
         Label userHandle = new Label("@" + headerHandle);
-        userHandle.setTextFill(Color.web("#71767b"));
+        userHandle.getStyleClass().add("tweet-username");
         userHandle.setFont(Font.font("System", 14));
 
         Label timestamp = createTimestampLabel(tweet.getCreatedAt());
@@ -169,7 +181,7 @@ public class BookmarksController {
         headerRow.getChildren().addAll(displayName, userHandle, timestamp);
 
         Label bodyText = new Label(tweet.getContent());
-        bodyText.setTextFill(Color.web("#e7e9ea"));
+        bodyText.getStyleClass().add("tweet-text");
         bodyText.setFont(Font.font("System", 15));
         bodyText.setWrapText(true);
 

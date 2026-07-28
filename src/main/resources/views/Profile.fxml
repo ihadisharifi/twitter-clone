@@ -48,15 +48,15 @@
                 </StackPane>
 
                 <!-- Scrollable profile content -->
-                <ScrollPane fitToWidth="true" hbarPolicy="NEVER" style="-fx-background: #000000; -fx-background-color: #000000;" vbarPolicy="AS_NEEDED" VBox.vgrow="ALWAYS">
+                <ScrollPane fitToWidth="true" hbarPolicy="NEVER" styleClass="app-root" vbarPolicy="AS_NEEDED" VBox.vgrow="ALWAYS">
                     <content>
-                        <VBox style="-fx-background-color: #000000;">
+                        <VBox styleClass="app-root">
                             <children>
 
                                 <!-- Profile banner with X-style back arrow and photo edit overlaid on it -->
                                 <StackPane fx:id="bannerContainer" onMouseClicked="#handleBannerClick" prefHeight="150.0" styleClass="profile-banner" style="-fx-cursor: hand;">
                                     <children>
-                                        <Region fx:id="bannerPlaceholder" maxHeight="Infinity" maxWidth="Infinity" style="-fx-background-color: #333333;" />
+                                        <Region fx:id="bannerPlaceholder" maxHeight="Infinity" maxWidth="Infinity" styleClass="profile-banner" />
                                         <ImageView fx:id="bannerImageView" fitHeight="150.0" fitWidth="600.0" preserveRatio="false" visible="false" managed="false" />
                                         <Button onAction="#handleGoToHome" styleClass="banner-back-button" text="←" StackPane.alignment="TOP_LEFT">
                                             <StackPane.margin>
@@ -96,12 +96,12 @@
 
                                         <VBox spacing="1.0">
                                             <children>
-                                                <Label fx:id="nameLabel" text="Sample" textFill="WHITE">
+                                                <Label fx:id="nameLabel" styleClass="profile-name" text="Sample">
                                                     <font>
                                                         <Font name="System Bold" size="20.0" />
                                                     </font>
                                                 </Label>
-                                                <Label fx:id="usernameLabel" text="@developer" textFill="#71767b">
+                                                <Label fx:id="usernameLabel" styleClass="profile-handle" text="@developer">
                                                     <font>
                                                         <Font size="14.0" />
                                                     </font>
@@ -109,7 +109,7 @@
                                             </children>
                                         </VBox>
 
-                                        <Label fx:id="bioLabel" text="sample Bio!" textFill="WHITE" wrapText="true">
+                                        <Label fx:id="bioLabel" styleClass="profile-bio" text="sample Bio!" wrapText="true">
                                             <font>
                                                 <Font size="14.0" />
                                             </font>
@@ -119,14 +119,14 @@
                                             <children>
                                                 <HBox spacing="4.0">
                                                     <children>
-                                                        <Label style="-fx-font-weight: bold;" text="145" textFill="WHITE" />
-                                                        <Label text="Following" textFill="#71767b" />
+                                                        <Label styleClass="profile-stat-count" text="145" />
+                                                        <Label styleClass="profile-stat-label" text="Following" />
                                                     </children>
                                                 </HBox>
                                                 <HBox spacing="4.0">
                                                     <children>
-                                                        <Label style="-fx-font-weight: bold;" text="892" textFill="WHITE" />
-                                                        <Label text="Followers" textFill="#71767b" />
+                                                        <Label styleClass="profile-stat-count" text="892" />
+                                                        <Label styleClass="profile-stat-label" text="Followers" />
                                                     </children>
                                                 </HBox>
                                             </children>
@@ -135,13 +135,13 @@
                                 </VBox>
 
                                 <!-- Posts tab -->
-                                <HBox alignment="CENTER" prefHeight="45.0" style="-fx-border-color: #333333; -fx-border-width: 0 0 1 0;">
+                                <HBox alignment="CENTER" prefHeight="45.0" styleClass="profile-tab-bar">
                                     <children>
-                                        <Label style="-fx-font-weight: bold; -fx-border-color: #1d9bf0; -fx-border-width: 0 0 3 0; -fx-padding: 0 0 10 0;" text="Posts" textFill="WHITE" />
+                                        <Label styleClass="profile-tab-active" text="Posts" />
                                     </children>
                                 </HBox>
 
-                                <VBox fx:id="userTweetsContainer" spacing="1.0" style="-fx-background-color: #000000;" />
+                                <VBox fx:id="userTweetsContainer" spacing="1.0" styleClass="app-root" />
                             </children>
                         </VBox>
                     </content>
@@ -220,12 +220,13 @@
                             </children>
                         </VBox>
 
-                        <Region style="-fx-pref-height: 1; -fx-background-color: #333333;" />
+                        <Region style="-fx-pref-height: 1;" styleClass="section-divider" />
 
                         <VBox spacing="4.0" style="-fx-padding: 8 0 0 0;" VBox.vgrow="ALWAYS">
                             <children>
                                 <Button alignment="BASELINE_LEFT" maxWidth="Infinity" minHeight="48.0" onAction="#handleGoToProfile" styleClass="drawer-menu-item" text="👤  Profile" />
                                 <Button alignment="BASELINE_LEFT" maxWidth="Infinity" minHeight="48.0" onAction="#handleGoToBookmarks" styleClass="drawer-menu-item" text="🔖  Bookmarks" />
+                                <Button fx:id="themeToggleButton" alignment="BASELINE_LEFT" maxWidth="Infinity" minHeight="48.0" onAction="#handleToggleTheme" styleClass="drawer-menu-item" text="☀️  Light Mode" />
                                 <Region VBox.vgrow="ALWAYS" />
                                 <Button alignment="BASELINE_LEFT" maxWidth="Infinity" minHeight="48.0" onAction="#handleLogout" styleClass="drawer-menu-item, drawer-logout" text="🚪  Log out" />
                             </children>

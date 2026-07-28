@@ -21,6 +21,8 @@ import shared.protocol.StatusCode;
 
 import java.util.UUID;
 
+import client.ThemeManager;
+
 public class RegisterController {
 
     @FXML
@@ -39,6 +41,9 @@ public class RegisterController {
     private Button registerButton;
 
     @FXML
+    private Button themeToggleButton;
+
+    @FXML
     private Label errorLabel;
 
     private final ServerConnection connection = ServerConnection.getInstance();
@@ -46,11 +51,20 @@ public class RegisterController {
 
     @FXML
     public void initialize() {
+        ThemeManager.updateThemeButton(themeToggleButton);
         try {
             connection.connect();
         } catch (Exception e) {
             errorLabel.setStyle("-fx-text-fill: #f4212e;");
             errorLabel.setText("Network Error: Could not connect to backend server.");
+        }
+    }
+
+    @FXML
+    private void handleToggleTheme() {
+        if (themeToggleButton != null && themeToggleButton.getScene() != null) {
+            ThemeManager.toggleTheme(themeToggleButton.getScene());
+            ThemeManager.updateThemeButton(themeToggleButton);
         }
     }
 

@@ -20,9 +20,9 @@
                 <Insets left="16.0" right="16.0" />
             </padding>
             <children>
-                <Button fx:id="cancelButton" onAction="#handleCancel" style="-fx-background-color: transparent; -fx-text-fill: #ffffff; -fx-font-size: 15px; -fx-font-weight: normal; -fx-padding: 6 12; -fx-cursor: hand;" text="Cancel" />
+                <Button fx:id="cancelButton" onAction="#handleCancel" styleClass="compose-cancel-button" text="Cancel" />
                 <Region HBox.hgrow="ALWAYS" />
-                <Button fx:id="postButton" onAction="#handlePost" style="-fx-background-color: #1d9bf0; -fx-text-fill: #ffffff; -fx-background-radius: 20; -fx-font-weight: bold; -fx-font-size: 14px; -fx-padding: 6 16; -fx-cursor: hand;" text="Post" />
+                <Button fx:id="postButton" onAction="#handlePost" styleClass="compose-post-button" text="Post" />
             </children>
         </HBox>
 
@@ -47,7 +47,7 @@
                 <!-- Tweet input area -->
                 <VBox spacing="12.0" HBox.hgrow="ALWAYS" VBox.vgrow="ALWAYS">
                     <children>
-                        <TextArea fx:id="tweetTextArea" promptText="What is happening?!" style="-fx-control-inner-background: #000000; -fx-text-fill: #ffffff; -fx-prompt-text-fill: #71767b; -fx-border-color: transparent; -fx-font-size: 16px; -fx-focus-color: transparent; -fx-faint-focus-color: transparent;" wrapText="true" VBox.vgrow="ALWAYS" />
+                        <TextArea fx:id="tweetTextArea" promptText="What is happening?!" styleClass="compose-text-area" wrapText="true" VBox.vgrow="ALWAYS" />
 
                         <!-- Attachment preview container -->
                         <StackPane fx:id="mediaPreviewContainer" alignment="TOP_RIGHT" maxHeight="220.0" maxWidth="380.0" visible="false" managed="false" style="-fx-background-color: #16181c; -fx-background-radius: 12; -fx-border-color: #333333; -fx-border-radius: 12;">
@@ -73,7 +73,7 @@
         </HBox>
 
         <!-- Bottom action toolbar for future media attachments -->
-        <VBox style="-fx-border-color: #333333; -fx-border-width: 1 0 0 0;">
+        <VBox styleClass="compose-toolbar">
             <padding>
                 <Insets bottom="12.0" left="16.0" right="16.0" top="12.0" />
             </padding>

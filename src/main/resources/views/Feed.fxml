@@ -49,9 +49,9 @@
 
 
                 <!-- Scrollable timeline -->
-                <ScrollPane fitToWidth="true" hbarPolicy="NEVER" style="-fx-background: #000000; -fx-background-color: #000000;" vbarPolicy="AS_NEEDED" VBox.vgrow="ALWAYS">
+                <ScrollPane fitToWidth="true" hbarPolicy="NEVER" styleClass="app-root" vbarPolicy="AS_NEEDED" VBox.vgrow="ALWAYS">
                     <content>
-                        <VBox fx:id="timelineContainer" spacing="1.0" style="-fx-background-color: #000000;" />
+                        <VBox fx:id="timelineContainer" spacing="1.0" styleClass="app-root" />
                     </content>
                 </ScrollPane>
 
@@ -130,13 +130,14 @@
                             </children>
                         </VBox>
 
-                        <Region style="-fx-pref-height: 1; -fx-background-color: #333333;" />
+                        <Region style="-fx-pref-height: 1;" styleClass="section-divider" />
 
                         <!-- Drawer menu items -->
                         <VBox spacing="4.0" style="-fx-padding: 8 0 0 0;" VBox.vgrow="ALWAYS">
                             <children>
                                 <Button alignment="BASELINE_LEFT" maxWidth="Infinity" minHeight="48.0" onAction="#handleGoToProfile" styleClass="drawer-menu-item" text="👤  Profile" />
                                 <Button alignment="BASELINE_LEFT" maxWidth="Infinity" minHeight="48.0" onAction="#handleGoToBookmarks" styleClass="drawer-menu-item" text="🔖  Bookmarks" />
+                                <Button fx:id="themeToggleButton" alignment="BASELINE_LEFT" maxWidth="Infinity" minHeight="48.0" onAction="#handleToggleTheme" styleClass="drawer-menu-item" text="☀️  Light Mode" />
                                 <Region VBox.vgrow="ALWAYS" />
                                 <Button alignment="BASELINE_LEFT" maxWidth="Infinity" minHeight="48.0" onAction="#handleLogout" styleClass="drawer-menu-item, drawer-logout" text="🚪  Log out" />
                             </children>

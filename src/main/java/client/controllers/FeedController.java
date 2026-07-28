@@ -53,6 +53,9 @@ public class FeedController {
     @FXML
     private Label drawerUsername;
 
+    @FXML
+    private Button themeToggleButton;
+
     private static final String STYLE_ACTION_IDLE =
             "-fx-background-color: transparent; -fx-text-fill: #71767b; -fx-padding: 0; -fx-cursor: hand;";
     private static final String STYLE_REPLY_ACTIVE =
@@ -78,8 +81,17 @@ public class FeedController {
     @FXML
     public void initialize() {
         SideDrawerHelper.populateUserHeader(drawerDisplayName, drawerUsername);
+        client.ThemeManager.updateThemeButton(themeToggleButton);
         loadTimeline();
         startTimestampRefresh();
+    }
+
+    @FXML
+    private void handleToggleTheme() {
+        if (drawerOverlay != null && drawerOverlay.getScene() != null) {
+            client.ThemeManager.toggleTheme(drawerOverlay.getScene());
+            client.ThemeManager.updateThemeButton(themeToggleButton);
+        }
     }
 
     private void loadTimeline() {
@@ -98,9 +110,8 @@ public class FeedController {
         if (timeRefreshTimeline != null) {
             timeRefreshTimeline.stop();
         }
-        // Refresh relative labels so "now" → "1s" → "1m" while the user stays on Home
         timeRefreshTimeline = new Timeline(
-                new KeyFrame(Duration.seconds(15), e -> refreshLiveTimestamps())
+                new KeyFrame(Duration.seconds(30), e -> refreshLiveTimestamps())
         );
         timeRefreshTimeline.setCycleCount(Animation.INDEFINITE);
         timeRefreshTimeline.play();
@@ -108,15 +119,14 @@ public class FeedController {
 
     private void refreshLiveTimestamps() {
         for (TimestampLabel entry : liveTimestamps) {
-            entry.label.setText(TweetTimeFormatter.formatFeedDot(entry.createdAt));
+            entry.label.setText("· " + TweetTimeFormatter.formatRelative(entry.createdAt));
         }
     }
 
     private Label createTimestampLabel(Instant createdAt) {
-        Label timestamp = new Label(TweetTimeFormatter.formatFeedDot(createdAt));
-        timestamp.setTextFill(Color.web("#71767b"));
+        Label timestamp = new Label("· " + TweetTimeFormatter.formatRelative(createdAt));
+        timestamp.getStyleClass().add("tweet-timestamp");
         timestamp.setFont(Font.font("System", 14));
-        Tooltip.install(timestamp, new Tooltip(TweetTimeFormatter.formatAbsolute(createdAt)));
         liveTimestamps.add(new TimestampLabel(timestamp, createdAt));
         return timestamp;
     }
@@ -136,16 +146,15 @@ public class FeedController {
      */
     private void renderTweetCard(StoredTweet tweet, boolean isNestedReply) {
         VBox card = new VBox(6);
-        card.setStyle("-fx-border-color: #333333; -fx-border-width: 0 0 1 0; -fx-padding: 12 16 12 16;");
+        card.getStyleClass().add(isNestedReply ? "tweet-card-nested" : "tweet-card");
         if (isNestedReply) {
             card.setPadding(new Insets(8, 8, 8, 36));
-            card.setStyle("-fx-border-color: #222222; -fx-border-width: 0 0 1 0; -fx-padding: 10 12 10 36;");
         }
 
         // Retweet context line
         if (tweet.isRetweet()) {
             Label repostLabel = new Label("🔁 " + safeName(tweet.getAuthorDisplayName()) + " reposted");
-            repostLabel.setTextFill(Color.web("#71767b"));
+            repostLabel.getStyleClass().add("tweet-repost-label");
             repostLabel.setFont(Font.font("System", 13));
             card.getChildren().add(repostLabel);
         }
@@ -154,7 +163,7 @@ public class FeedController {
                     ? "@" + tweet.getOriginalAuthorUsername()
                     : "someone";
             Label replyLabel = new Label("💬 Replying to " + replyTo);
-            replyLabel.setTextFill(Color.web("#1d9bf0"));
+            replyLabel.getStyleClass().add("tweet-reply-label");
             replyLabel.setFont(Font.font("System", 13));
             card.getChildren().add(replyLabel);
         }
@@ -164,7 +173,7 @@ public class FeedController {
         VBox avatarBox = new VBox();
         Label avatar = new Label("👤");
         avatar.setFont(Font.font("System", 24));
-        avatar.setTextFill(Color.web("#71767b"));
+        avatar.getStyleClass().add("secondary-text");
         avatarBox.getChildren().add(avatar);
 
         VBox contentStack = new VBox(4);
@@ -188,11 +197,11 @@ public class FeedController {
 
         HBox headerRow = new HBox(8);
         Label displayName = new Label(headerName);
-        displayName.setTextFill(Color.WHITE);
+        displayName.getStyleClass().add("tweet-author");
         displayName.setFont(Font.font("System", FontWeight.BOLD, 15));
 
         Label userHandle = new Label("@" + headerHandle);
-        userHandle.setTextFill(Color.web("#71767b"));
+        userHandle.getStyleClass().add("tweet-username");
         userHandle.setFont(Font.font("System", 14));
 
         Label timestamp = createTimestampLabel(tweet.getCreatedAt());
@@ -208,7 +217,7 @@ public class FeedController {
         }
 
         Label bodyText = new Label(tweet.getContent());
-        bodyText.setTextFill(Color.web("#e7e9ea"));
+        bodyText.getStyleClass().add("tweet-text");
         bodyText.setFont(Font.font("System", 15));
         bodyText.setWrapText(true);
         bodyText.setMaxWidth(isNestedReply ? 360 : 420);

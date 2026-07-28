@@ -46,13 +46,13 @@
                 </StackPane>
 
                 <!-- Page title -->
-                <HBox alignment="CENTER_LEFT" prefHeight="50.0" spacing="12.0" style="-fx-border-color: #333333; -fx-border-width: 0 0 1 0;">
+                <HBox alignment="CENTER_LEFT" prefHeight="50.0" spacing="12.0" styleClass="page-header-bar">
                     <padding>
                         <Insets left="12.0" right="16.0" />
                     </padding>
                     <children>
-                        <Button onAction="#handleBack" style="-fx-background-color: transparent; -fx-text-fill: #ffffff; -fx-font-size: 18px; -fx-cursor: hand; -fx-padding: 4 8;" text="←" />
-                        <Label text="Bookmarks" textFill="WHITE">
+                        <Button onAction="#handleBack" styleClass="back-button" text="←" />
+                        <Label styleClass="page-header-title" text="Bookmarks">
                             <font>
                                 <Font name="System Bold" size="18.0" />
                             </font>
@@ -61,9 +61,9 @@
                 </HBox>
 
                 <!-- Scrollable timeline for bookmarked tweets -->
-                <ScrollPane fitToWidth="true" hbarPolicy="NEVER" style="-fx-background: #000000; -fx-background-color: #000000;" vbarPolicy="AS_NEEDED" VBox.vgrow="ALWAYS">
+                <ScrollPane fitToWidth="true" hbarPolicy="NEVER" styleClass="app-root" vbarPolicy="AS_NEEDED" VBox.vgrow="ALWAYS">
                     <content>
-                        <VBox fx:id="bookmarksContainer" spacing="1.0" style="-fx-background-color: #000000;" />
+                        <VBox fx:id="bookmarksContainer" spacing="1.0" styleClass="app-root" />
                     </content>
                 </ScrollPane>
 
@@ -140,12 +140,13 @@
                             </children>
                         </VBox>
 
-                        <Region style="-fx-pref-height: 1; -fx-background-color: #333333;" />
+                        <Region style="-fx-pref-height: 1;" styleClass="section-divider" />
 
                         <VBox spacing="4.0" style="-fx-padding: 8 0 0 0;" VBox.vgrow="ALWAYS">
                             <children>
                                 <Button alignment="BASELINE_LEFT" maxWidth="Infinity" minHeight="48.0" onAction="#handleGoToProfile" styleClass="drawer-menu-item" text="👤  Profile" />
                                 <Button alignment="BASELINE_LEFT" maxWidth="Infinity" minHeight="48.0" onAction="#handleGoToBookmarks" styleClass="drawer-menu-item" text="🔖  Bookmarks" />
+                                <Button fx:id="themeToggleButton" alignment="BASELINE_LEFT" maxWidth="Infinity" minHeight="48.0" onAction="#handleToggleTheme" styleClass="drawer-menu-item" text="☀️  Light Mode" />
                                 <Region VBox.vgrow="ALWAYS" />
                                 <Button alignment="BASELINE_LEFT" maxWidth="Infinity" minHeight="48.0" onAction="#handleLogout" styleClass="drawer-menu-item, drawer-logout" text="🚪  Log out" />
                             </children>

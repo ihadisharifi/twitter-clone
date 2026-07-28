@@ -5,22 +5,30 @@
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.PasswordField?>
 <?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Font?>
 
-<VBox alignment="CENTER" prefHeight="650.0" prefWidth="600.0" spacing="15.0" style="-fx-background-color: #000000;" stylesheets="@../styles/twitter.css" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="client.controllers.RegisterController">
+<VBox alignment="CENTER" prefHeight="650.0" prefWidth="600.0" spacing="15.0" styleClass="app-root" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="client.controllers.RegisterController">
     <padding>
         <Insets bottom="30.0" left="40.0" right="40.0" top="30.0" />
     </padding>
     <children>
+        <!-- Top Theme Toggle Bar -->
+        <HBox alignment="TOP_RIGHT" maxWidth="300.0">
+            <children>
+                <Button fx:id="themeToggleButton" onAction="#handleToggleTheme" style="-fx-background-color: transparent; -fx-font-size: 14px; -fx-cursor: hand;" styleClass="secondary-text" text="☀️ Light Mode" />
+            </children>
+        </HBox>
+
         <!-- Twitter/X logo -->
-        <Label text="𝕏" textFill="WHITE">
+        <Label styleClass="x-logo" text="𝕏">
             <font>
                 <Font name="System Bold" size="40.0" />
             </font>
         </Label>
         <!-- Page title -->
-        <Label text="Create your account" textFill="WHITE">
+        <Label styleClass="login-title" text="Create your account">
             <font>
                 <Font name="System Bold" size="22.0" />
             </font>
@@ -29,13 +37,13 @@
             </VBox.margin>
         </Label>
         <!-- Input fields -->
-        <TextField fx:id="displayNameField" promptText="Display Name" minHeight="35.0" maxWidth="300.0" style="-fx-background-color: #000000; -fx-text-inner-color: white; -fx-border-color: #333333; -fx-border-radius: 5; -fx-prompt-text-fill: #71767b;" />
-        <TextField fx:id="usernameField" promptText="Username" minHeight="35.0" maxWidth="300.0" style="-fx-background-color: #000000; -fx-text-inner-color: white; -fx-border-color: #333333; -fx-border-radius: 5; -fx-prompt-text-fill: #71767b;" />
-        <TextField fx:id="emailField" promptText="Email address" minHeight="35.0" maxWidth="300.0" style="-fx-background-color: #000000; -fx-text-inner-color: white; -fx-border-color: #333333; -fx-border-radius: 5; -fx-prompt-text-fill: #71767b;" />
-        <PasswordField fx:id="passwordField" promptText="Password" minHeight="35.0" maxWidth="300.0" style="-fx-background-color: #000000; -fx-text-inner-color: white; -fx-border-color: #333333; -fx-border-radius: 5; -fx-prompt-text-fill: #71767b;" />
+        <TextField fx:id="displayNameField" minHeight="35.0" maxWidth="300.0" promptText="Display Name" />
+        <TextField fx:id="usernameField" minHeight="35.0" maxWidth="300.0" promptText="Username" />
+        <TextField fx:id="emailField" minHeight="35.0" maxWidth="300.0" promptText="Email address" />
+        <PasswordField fx:id="passwordField" minHeight="35.0" maxWidth="300.0" promptText="Password" />
 
         <!-- Sign Up button -->
-        <Button fx:id="registerButton" text="Sign Up" minHeight="40.0" maxWidth="300" onAction="#handleRegister" style="-fx-background-color: #ffffff; -fx-text-fill: #000000; -fx-background-radius: 20; -fx-font-weight: bold;" />
+        <Button fx:id="registerButton" minHeight="40.0" maxWidth="300" onAction="#handleRegister" styleClass="action-button-primary" text="Sign Up" />
 
         <!-- Error message label -->
         <Label fx:id="errorLabel" textFill="#f4212e" wrapText="true">
@@ -45,6 +53,6 @@
         </Label>
 
         <!-- Button to navigate back to login page -->
-        <Button text="Already have an account? Log in" onAction="#handleBackToLogin" style="-fx-background-color: transparent; -fx-text-fill: #1d9bf0; -fx-underline: true; -fx-cursor: hand;" />
+        <Button onAction="#handleBackToLogin" styleClass="link-button" text="Already have an account? Log in" />
     </children>
 </VBox>
