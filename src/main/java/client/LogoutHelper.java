@@ -11,9 +11,6 @@ public final class LogoutHelper {
 
     private LogoutHelper() {}
 
-    /**
-     * Displays a clean confirmation dialog before terminating active user session.
-     */
     public static void showConfirmation() {
         Alert alert = new Alert(AlertType.CONFIRMATION);
         alert.setTitle("Log out");
@@ -39,7 +36,6 @@ public final class LogoutHelper {
         if (result.isPresent() && result.get() == logoutButton) {
             System.out.println("Invalidating active user context channel. Rerouting to login...");
             UserSession.getInstance().clearSession();
-            TweetStore.getInstance().clear();
             NavigationManager.switchScene("/views/Login.fxml");
         }
     }
