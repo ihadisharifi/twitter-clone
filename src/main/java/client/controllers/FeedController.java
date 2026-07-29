@@ -205,7 +205,7 @@ public class FeedController {
 
         RequestType feedType;
         try {
-            feedType = RequestType.valueOf("GET_FEED");
+            feedType = RequestType.GET_FEED;
         } catch (IllegalArgumentException exception) {
             throw new IllegalStateException(
                     "RequestType.GET_FEED is missing. Add it to the shared RequestType enum."
