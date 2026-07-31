@@ -50,6 +50,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.Consumer;
 
 
 public class FeedController {
@@ -70,12 +71,25 @@ public class FeedController {
 
     private final Gson gson = new Gson();
     private final ServerConnection connection = ServerConnection.getInstance();
+    private final Consumer<Response> newTweetListener = this::handleServerEvent;
 
     @FXML
     public void initialize() {
+        connection.addEventListener(newTweetListener);
+        timelineContainer.sceneProperty().addListener((observable, oldScene, newScene) -> {
+            if (oldScene != null && newScene == null) {
+                connection.removeEventListener(newTweetListener);
+            }
+        });
         SideDrawerHelper.populateUserHeader(drawerDisplayName, drawerUsername);
         loadDrawerProfile();
         loadTimeline();
+    }
+
+    private void handleServerEvent(Response response) {
+        if (response != null && "NEW_TWEET".equals(response.getMessage())) {
+            Platform.runLater(this::loadTimeline);
+        }
     }
 
     private void loadDrawerProfile() {

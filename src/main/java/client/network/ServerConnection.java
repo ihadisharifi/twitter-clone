@@ -9,8 +9,10 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
 import java.util.Map;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -37,7 +39,7 @@ public class ServerConnection {
     private Thread listenerThread;
     private volatile boolean running = false;
     private final Map<String, CompletableFuture<Response>> pending = new ConcurrentHashMap<>();
-    private volatile Consumer<Response> eventListener;
+    private final List<Consumer<Response>> eventListeners = new CopyOnWriteArrayList<>();
 
     public synchronized void connect() throws IOException {
         if (running) {
@@ -56,7 +58,20 @@ public class ServerConnection {
     }
 
     public void setEventListener(Consumer<Response> listener) {
-        this.eventListener = listener;
+        eventListeners.clear();
+        if (listener != null) {
+            eventListeners.add(listener);
+        }
+    }
+
+    public void addEventListener(Consumer<Response> listener) {
+        if (listener != null) {
+            eventListeners.add(listener);
+        }
+    }
+
+    public void removeEventListener(Consumer<Response> listener) {
+        eventListeners.remove(listener);
     }
 
     public Response sendMessage(Request req) throws IOException {
@@ -100,9 +115,12 @@ public class ServerConnection {
                 }
 
                 if (response.isEvent()) {
-                    Consumer<Response> listener = eventListener;
-                    if (listener != null) {
-                        listener.accept(response);
+                    for (Consumer<Response> listener : eventListeners) {
+                        try {
+                            listener.accept(response);
+                        } catch (RuntimeException e) {
+                            System.err.println("Event listener failed: " + e.getMessage());
+                        }
                     }
                 } else {
                     CompletableFuture<Response> future = pending.remove(response.getRequestId());
