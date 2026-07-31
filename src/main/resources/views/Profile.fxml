@@ -92,18 +92,19 @@
                                                     </children>
                                                 </StackPane>
                                                 <Region HBox.hgrow="ALWAYS" />
+                                                <Button fx:id="editBioButton" managed="false" onAction="#handleEditBio" text="Edit bio" visible="false" />
                                                 <Button fx:id="followButton" managed="false" onAction="#handleFollowToggle" text="Follow" visible="false" />
                                             </children>
                                         </HBox>
 
                                         <VBox spacing="1.0">
                                             <children>
-                                                <Label fx:id="nameLabel" text="Sample" textFill="WHITE">
+                                                <Label fx:id="nameLabel" text="" textFill="WHITE">
                                                     <font>
                                                         <Font name="System Bold" size="20.0" />
                                                     </font>
                                                 </Label>
-                                                <Label fx:id="usernameLabel" text="@developer" textFill="#71767b">
+                                                <Label fx:id="usernameLabel" text="" textFill="#71767b">
                                                     <font>
                                                         <Font size="14.0" />
                                                     </font>

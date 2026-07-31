@@ -19,6 +19,7 @@ import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.scene.Node;
 import javafx.scene.control.Alert;
+import javafx.scene.control.ButtonBar;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.DialogPane;
@@ -53,6 +54,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 public class ProfileController {
@@ -62,6 +64,7 @@ public class ProfileController {
     @FXML private Label bioLabel;
     @FXML private Label followingCountLabel;
     @FXML private Label followersCountLabel;
+    @FXML private Button editBioButton;
     @FXML private Button followButton;
     @FXML private VBox userTweetsContainer;
 
@@ -188,6 +191,8 @@ public class ProfileController {
         bioLabel.setText(blankToEmpty(profileUser.getBio()));
         followingCountLabel.setText(String.valueOf(data.followingCount()));
         followersCountLabel.setText(String.valueOf(data.followersCount()));
+        editBioButton.setVisible(ownProfile);
+        editBioButton.setManaged(ownProfile);
         if (ownProfile) {
             drawerFollowingCount.setText(String.valueOf(data.followingCount()));
             drawerFollowersCount.setText(String.valueOf(data.followersCount()));
@@ -444,6 +449,65 @@ public class ProfileController {
         if (ownProfile) {
             chooseAndSaveImage(false);
         }
+    }
+
+    @FXML
+    private void handleEditBio() {
+        if (!ownProfile || profileUser == null) {
+            return;
+        }
+
+        TextArea input = new TextArea(blankToEmpty(profileUser.getBio()));
+        input.setPromptText("Tell people about yourself");
+        input.setPrefRowCount(4);
+        input.setWrapText(true);
+        input.setStyle("-fx-control-inner-background: #000000; -fx-text-fill: white; "
+                + "-fx-prompt-text-fill: #71767b; -fx-border-color: #333333;");
+        input.textProperty().addListener((observable, oldText, newText) -> {
+            String value = newText == null ? "" : newText;
+            int count = value.codePointCount(0, value.length());
+            if (count > 160) {
+                int endIndex = value.offsetByCodePoints(0, 160);
+                input.setText(value.substring(0, endIndex));
+                input.positionCaret(endIndex);
+            }
+        });
+
+        ButtonType cancel = new ButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE);
+        ButtonType save = new ButtonType("Save", ButtonBar.ButtonData.OK_DONE);
+        Alert dialog = new Alert(Alert.AlertType.NONE);
+        dialog.setTitle("Edit bio");
+        dialog.setHeaderText("Edit your bio (up to 160 characters)");
+        dialog.getButtonTypes().setAll(cancel, save);
+        dialog.getDialogPane().setContent(input);
+        dialog.getDialogPane().setStyle("-fx-background-color: #000000; -fx-border-color: #333333;");
+
+        Optional<ButtonType> result = dialog.showAndWait();
+        if (result.isPresent() && result.get() == save) {
+            updateBio(input.getText() == null ? "" : input.getText().trim());
+        }
+    }
+
+    private void updateBio(String bio) {
+        editBioButton.setDisable(true);
+        Task<User> task = new Task<>() {
+            @Override
+            protected User call() throws Exception {
+                JsonObject body = authenticatedBody();
+                body.addProperty("bio", bio);
+                Response response = send(RequestType.UPDATE_PROFILE, body);
+                return gson.fromJson(response.getPayload(), User.class);
+            }
+        };
+        task.setOnSucceeded(event -> {
+            editBioButton.setDisable(false);
+            loadProfile();
+        });
+        task.setOnFailed(event -> {
+            editBioButton.setDisable(false);
+            showError(message(task.getException(), "Unable to update bio."));
+        });
+        start(task, "update-profile-bio");
     }
 
     @FXML
