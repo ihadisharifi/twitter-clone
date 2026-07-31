@@ -190,6 +190,7 @@ AI tools were used as programming assistants.
 AI-generated content was reviewed and modified before being included in the project. All architectural decisions, implementation details and testing were performed by the team members.
 
 AI tools were also used as a learning aid to better understand core concepts such as networking, concurrency, and database integration throughout the development process.
+AI tools were primarily used in the UI development process to assist with JavaFX implementation and client-side functionality.
 
 ## 11. Conclusion
 
