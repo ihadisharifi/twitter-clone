@@ -31,7 +31,7 @@ The project gives users a familiar place to publish tweets, discover content, an
 - Attach images, videos, and animated GIFs to tweets
 - Emoji picker and relative tweet timestamps
 - Live new-tweet events for connected followers
-- Responsive navigation between the feed, search, compose, bookmarks, and profile views
+- Responsive navigation between the feed, search, compose, and profile views
 
 ## Technology Stack
 
@@ -41,7 +41,6 @@ The project gives users a familiar place to publish tweets, discover content, an
 - PostgreSQL and JDBC
 - TCP sockets with a Gson-based JSON protocol
 - BCrypt for password hashing
-- JUnit 5
 
 ## Usage
 
@@ -65,7 +64,7 @@ cd twitter-clone
 Create the database and application user from `psql`:
 
 ```sql
-CREATE USER twitterapp WITH PASSWORD 'choose-a-strong-password';
+CREATE USER twitterapp WITH PASSWORD 'pass';
 CREATE DATABASE twitterclone OWNER twitterapp;
 ```
 
@@ -74,7 +73,7 @@ Then update `src/main/resources/db.properties` with your local credentials:
 ```properties
 db.url=jdbc:postgresql://localhost:5432/twitterclone
 db.user=twitterapp
-db.password=choose-a-strong-password
+db.password=pass
 ```
 
 The server automatically applies `src/main/resources/db/schema.sql` when it starts.
@@ -109,6 +108,36 @@ Register an account, sign in, and use the navigation controls to compose tweets,
 
 ## Demo and Visuals
 
+### Application Screenshots
+
+
+#### Login
+
+
+![Twitter Clone login screen](docs/images/login.png)
+
+#### Home Feed
+
+
+![Twitter Clone home feed](docs/images/feed.png)
+
+#### Compose Tweet
+
+
+![Twitter Clone tweet composer](docs/images/compose.png)
+
+#### Search
+
+
+![Twitter Clone search results](docs/images/search.png)
+
+#### User Profile
+
+![Twitter Clone user profile](docs/images/profile.png)
+
+
+### Architecture
+
 ```mermaid
 flowchart LR
     U[User] --> C[JavaFX Client]
@@ -116,11 +145,9 @@ flowchart LR
     S <-->|JDBC| D[(PostgreSQL)]
 ```
 
-The interface includes dedicated login, registration, feed, compose, search, bookmarks, and profile views styled after X/Twitter. UI screenshots or an animated walkthrough can be added to a `docs/images` directory as the project evolves.
 
 ## Credits
 
-Developed by [Hadi Sharifi](https://github.com/ihadisharifi) and project contributors.
 
 This project uses the following open-source libraries and resources:
 
@@ -128,7 +155,6 @@ This project uses the following open-source libraries and resources:
 - [Gson](https://github.com/google/gson) for JSON serialization
 - [PostgreSQL JDBC Driver](https://jdbc.postgresql.org/) for database access
 - [Favre BCrypt](https://github.com/patrickfav/bcrypt) for password hashing
-- [JUnit 5](https://junit.org/junit5/) for testing support
 
 The product concept and interface are inspired by X/Twitter. This is an independent educational project and is not affiliated with or endorsed by X Corp.
 
@@ -136,7 +162,7 @@ The product concept and interface are inspired by X/Twitter. This is an independ
 
 ### 1.0.0 (in development)
 
-- Added JavaFX authentication, feed, search, compose, bookmarks, and profile views
+- Added JavaFX authentication, feed, search, compose, and profile views
 - Replaced temporary in-memory storage with PostgreSQL DAOs
 - Added tweets, replies, reposts, likes, follows, hashtags, and profile editing
 - Added image, video, GIF, avatar, and banner media support
