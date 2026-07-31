@@ -17,6 +17,8 @@ import server.database.dao.*;
 
 public class TweetController {
 
+    private static final int MAX_TWEET_CHARACTERS = 280;
+
     private final UserDao userDao = new UserDao();
     private final TweetDao tweetDao = new TweetDao();
     private final LikeDao likeDao = new LikeDao();
@@ -41,6 +43,10 @@ public class TweetController {
                 ? body.get("content").getAsString() : null;
         if (content == null || content.trim().isEmpty()) {
             return Response.error(requestId, StatusCode.BAD_REQUEST, "Tweet content cannot be empty.");
+        }
+        if (content.codePointCount(0, content.length()) > MAX_TWEET_CHARACTERS) {
+            return Response.error(requestId, StatusCode.BAD_REQUEST,
+                    "Tweets cannot exceed " + MAX_TWEET_CHARACTERS + " characters.");
         }
 
         try {
