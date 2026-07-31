@@ -24,6 +24,7 @@ public class ClientHandler implements Runnable {
     private final FeedController feedController = new FeedController(authController);
     private final FollowController followController = new FollowController(authController);
     private final LikeController likeController = new LikeController(authController);
+    private final BookmarkController bookmarkController = new BookmarkController(authController);
     private final SearchController searchController = new SearchController(authController);
 
     public ClientHandler(Socket socket) {
@@ -107,6 +108,12 @@ public class ClientHandler implements Runnable {
                     return likeController.likeTweet(request.getRequestId(), request.getPayload());
                 case UNLIKE_TWEET:
                     return likeController.unlikeTweet(request.getRequestId(), request.getPayload());
+                case BOOKMARK_TWEET:
+                    return bookmarkController.bookmark(request.getRequestId(), request.getPayload());
+                case UNBOOKMARK_TWEET:
+                    return bookmarkController.unbookmark(request.getRequestId(), request.getPayload());
+                case GET_BOOKMARKS:
+                    return bookmarkController.getBookmarks(request.getRequestId(), request.getPayload());
                 case GET_FEED:
                     return feedController.getFeed(request.getRequestId(), request.getPayload());
                 case SEARCH_USERS:
