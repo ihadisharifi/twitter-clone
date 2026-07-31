@@ -4,6 +4,7 @@ import client.LogoutHelper;
 import client.NavigationManager;
 import client.SideDrawerHelper;
 import client.TweetMediaHelper;
+import client.TweetCharacterLimit;
 import client.TweetTimeFormatter;
 import client.UserSession;
 import client.UserAvatarHelper;
@@ -339,6 +340,9 @@ public class ProfileController {
         Button post = new Button("Reply");
         post.setStyle("-fx-background-color: #1d9bf0; -fx-text-fill: white; "
                 + "-fx-background-radius: 18; -fx-font-weight: bold;");
+        Label characterCount = new Label();
+        characterCount.setTextFill(Color.web("#71767b"));
+        TweetCharacterLimit.enforce(input, characterCount);
         post.setOnAction(event -> {
             String text = input.getText() == null ? "" : input.getText().trim();
             if (text.isEmpty()) return;
@@ -363,7 +367,9 @@ public class ProfileController {
             start(task, "reply-from-profile");
         });
 
-        HBox controls = new HBox(10, attach, post);
+        Region spacer = new Region();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
+        HBox controls = new HBox(10, attach, spacer, characterCount, post);
         composer.getChildren().addAll(input, preview, controls);
         return composer;
     }
