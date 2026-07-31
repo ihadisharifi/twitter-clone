@@ -55,6 +55,14 @@ CREATE TABLE IF NOT EXISTS likes (
 
 CREATE INDEX IF NOT EXISTS idx_likes_tweet_id ON likes(tweet_id);
 
+-- ---------- BOOKMARKS ----------
+CREATE TABLE IF NOT EXISTS bookmarks (
+    user_id    INTEGER NOT NULL REFERENCES users(id)  ON DELETE CASCADE,
+    tweet_id   INTEGER NOT NULL REFERENCES tweets(id) ON DELETE CASCADE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    PRIMARY KEY (user_id, tweet_id)
+    );
+
 -- ---------- MEDIA ----------
 CREATE TABLE IF NOT EXISTS media (
                                      id        SERIAL PRIMARY KEY,
@@ -77,4 +85,3 @@ CREATE TABLE IF NOT EXISTS tweet_hashtags (
     );
 
 CREATE INDEX IF NOT EXISTS idx_tweet_hashtags_hashtag_id ON tweet_hashtags(hashtag_id);
-
