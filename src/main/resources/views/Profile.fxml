@@ -1,0 +1,244 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.shape.Circle?>
+<?import javafx.scene.text.Font?>
+
+<StackPane prefHeight="650.0" prefWidth="600.0" styleClass="app-root" stylesheets="@../styles/twitter.css" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="client.controllers.ProfileController">
+    <children>
+
+        <!-- Main page (top bar + profile content + bottom nav) -->
+        <VBox styleClass="app-root">
+            <children>
+
+                <!-- Top bar: profile picture left, X logo center -->
+                <StackPane prefHeight="54.0" styleClass="top-bar">
+                    <children>
+                        <HBox alignment="CENTER_LEFT" maxWidth="Infinity" StackPane.alignment="CENTER_LEFT">
+                            <padding>
+                                <Insets left="12.0" right="12.0" />
+                            </padding>
+                            <children>
+                                <Button onAction="#handleOpenDrawer" styleClass="avatar-button">
+                                    <graphic>
+                                        <StackPane>
+                                            <children>
+                                                <Circle fill="#262626" radius="16.0" stroke="#333333" strokeWidth="1.0" />
+                                                <Label style="-fx-text-fill: #71767b; -fx-font-size: 14; -fx-font-weight: bold;" text="U" />
+                                            </children>
+                                        </StackPane>
+                                    </graphic>
+                                </Button>
+                            </children>
+                        </HBox>
+                        <Label styleClass="x-logo" text="𝕏" StackPane.alignment="CENTER">
+                            <font>
+                                <Font name="System Bold" size="22.0" />
+                            </font>
+                        </Label>
+                    </children>
+                </StackPane>
+
+                <!-- Scrollable profile content -->
+                <ScrollPane fitToWidth="true" hbarPolicy="NEVER" style="-fx-background: #000000; -fx-background-color: #000000;" vbarPolicy="AS_NEEDED" VBox.vgrow="ALWAYS">
+                    <content>
+                        <VBox style="-fx-background-color: #000000;">
+                            <children>
+
+                                <!-- Profile banner with X-style back arrow and photo edit overlaid on it -->
+                                <StackPane fx:id="bannerContainer" onMouseClicked="#handleBannerClick" prefHeight="150.0" styleClass="profile-banner" style="-fx-cursor: hand;">
+                                    <children>
+                                        <Region fx:id="bannerPlaceholder" maxHeight="Infinity" maxWidth="Infinity" style="-fx-background-color: #333333;" />
+                                        <ImageView fx:id="bannerImageView" fitHeight="150.0" fitWidth="600.0" preserveRatio="false" visible="false" managed="false" />
+                                        <Button onAction="#handleGoToHome" styleClass="banner-back-button" text="←" StackPane.alignment="TOP_LEFT">
+                                            <StackPane.margin>
+                                                <Insets left="12.0" top="12.0" />
+                                            </StackPane.margin>
+                                        </Button>
+                                        <Button onAction="#handleBannerClick" style="-fx-background-color: rgba(0,0,0,0.55); -fx-text-fill: white; -fx-background-radius: 18; -fx-font-size: 12px; -fx-cursor: hand;" text="Photo" StackPane.alignment="CENTER" />
+                                    </children>
+                                </StackPane>
+
+                                <!-- Profile details -->
+                                <VBox spacing="8.0" style="-fx-padding: 0 15 15 15;">
+                                    <children>
+                                        <HBox alignment="BOTTOM_LEFT" prefHeight="45.0">
+                                            <children>
+                                                <StackPane onMouseClicked="#handleAvatarClick" style="-fx-cursor: hand;">
+                                                    <HBox.margin>
+                                                        <Insets top="-45.0" />
+                                                    </HBox.margin>
+                                                    <children>
+                                                        <!-- Default Circle placeholder -->
+                                                        <Circle fx:id="avatarPlaceholder" fill="#262626" radius="45.0" stroke="#000000" strokeWidth="4.0" />
+                                                        <Label fx:id="avatarPlaceholderIcon" style="-fx-text-fill: #71767b; -fx-font-size: 30px; -fx-font-weight: bold;" text="U" />
+                                                        <!-- Custom ImageView clipped to circle -->
+                                                        <ImageView fx:id="avatarImageView" fitHeight="90.0" fitWidth="90.0" preserveRatio="false" visible="false" managed="false" />
+                                                        <!-- Camera badge -->
+                                                        <StackPane alignment="BOTTOM_RIGHT" prefHeight="90.0" prefWidth="90.0">
+                                                            <children>
+                                                                <Circle fill="#1d9bf0" radius="12.0" stroke="#000000" strokeWidth="2.0" />
+                                                                <Label style="-fx-text-fill: white; -fx-font-size: 8px; -fx-font-weight: bold;" text="+" />
+                                                            </children>
+                                                        </StackPane>
+                                                    </children>
+                                                </StackPane>
+                                                <Region HBox.hgrow="ALWAYS" />
+                                                <Button fx:id="editBioButton" managed="false" onAction="#handleEditBio" text="Edit bio" visible="false" />
+                                                <Button fx:id="followButton" managed="false" onAction="#handleFollowToggle" text="Follow" visible="false" />
+                                            </children>
+                                        </HBox>
+
+                                        <VBox spacing="1.0">
+                                            <children>
+                                                <Label fx:id="nameLabel" text="" textFill="WHITE">
+                                                    <font>
+                                                        <Font name="System Bold" size="20.0" />
+                                                    </font>
+                                                </Label>
+                                                <Label fx:id="usernameLabel" text="" textFill="#71767b">
+                                                    <font>
+                                                        <Font size="14.0" />
+                                                    </font>
+                                                </Label>
+                                            </children>
+                                        </VBox>
+
+                                        <Label fx:id="bioLabel" text="" textFill="WHITE" wrapText="true">
+                                            <font>
+                                                <Font size="14.0" />
+                                            </font>
+                                        </Label>
+
+                                        <HBox spacing="20.0" style="-fx-padding: 5 0 0 0;">
+                                            <children>
+                                                <HBox onMouseClicked="#handleShowFollowing" spacing="4.0" style="-fx-cursor: hand;">
+                                                    <children>
+                                                        <Label fx:id="followingCountLabel" style="-fx-font-weight: bold;" text="0" textFill="WHITE" />
+                                                        <Label text="Following" textFill="#71767b" />
+                                                    </children>
+                                                </HBox>
+                                                <HBox onMouseClicked="#handleShowFollowers" spacing="4.0" style="-fx-cursor: hand;">
+                                                    <children>
+                                                        <Label fx:id="followersCountLabel" style="-fx-font-weight: bold;" text="0" textFill="WHITE" />
+                                                        <Label text="Followers" textFill="#71767b" />
+                                                    </children>
+                                                </HBox>
+                                            </children>
+                                        </HBox>
+                                    </children>
+                                </VBox>
+
+                                <!-- Posts tab -->
+                                <HBox alignment="CENTER" prefHeight="45.0" style="-fx-border-color: #333333; -fx-border-width: 0 0 1 0;">
+                                    <children>
+                                        <Label style="-fx-font-weight: bold; -fx-border-color: #1d9bf0; -fx-border-width: 0 0 3 0; -fx-padding: 0 0 10 0;" text="Posts" textFill="WHITE" />
+                                    </children>
+                                </HBox>
+
+                                <VBox fx:id="userTweetsContainer" spacing="1.0" style="-fx-background-color: #000000;" />
+                            </children>
+                        </VBox>
+                    </content>
+                </ScrollPane>
+
+                <!-- Bottom navigation bar (Profile active) -->
+                <HBox alignment="CENTER" prefHeight="56.0" spacing="0.0" styleClass="bottom-bar">
+                    <children>
+                        <Button maxWidth="Infinity" minHeight="56.0" onAction="#handleGoToHome" styleClass="bottom-nav-item" text="Home" HBox.hgrow="ALWAYS">
+                            <font>
+                                <Font size="20.0" />
+                            </font>
+                        </Button>
+                        <Button maxWidth="Infinity" minHeight="56.0" onAction="#handleGoToSearch" styleClass="bottom-nav-item" text="Search" HBox.hgrow="ALWAYS">
+                            <font>
+                                <Font size="20.0" />
+                            </font>
+                        </Button>
+                        <Button maxWidth="Infinity" minHeight="56.0" onAction="#handleCreatePost" styleClass="bottom-nav-item" text="Post" HBox.hgrow="ALWAYS">
+                            <font>
+                                <Font size="20.0" />
+                            </font>
+                        </Button>
+                        <Button maxWidth="Infinity" minHeight="56.0" onAction="#handleGoToProfile" styleClass="bottom-nav-item, bottom-nav-active" text="Profile" HBox.hgrow="ALWAYS">
+                            <font>
+                                <Font size="20.0" />
+                            </font>
+                        </Button>
+                    </children>
+                </HBox>
+            </children>
+        </VBox>
+
+        <!-- Side drawer overlay -->
+        <HBox fx:id="drawerOverlay" managed="false" mouseTransparent="true" visible="false" styleClass="drawer-overlay">
+            <children>
+                <VBox fx:id="drawerPanel" prefWidth="300.0" spacing="0.0" styleClass="drawer-panel">
+                    <children>
+                        <VBox spacing="6.0" styleClass="drawer-header">
+                            <padding>
+                                <Insets bottom="16.0" left="16.0" right="16.0" top="20.0" />
+                            </padding>
+                            <children>
+                                <StackPane alignment="CENTER_LEFT" prefHeight="48.0">
+                                    <children>
+                                        <Circle fill="#262626" radius="24.0" stroke="#333333" strokeWidth="1.0" />
+                                        <Label style="-fx-text-fill: #71767b; -fx-font-size: 22; -fx-font-weight: bold;" text="U" />
+                                    </children>
+                                </StackPane>
+                                <Label fx:id="drawerDisplayName" styleClass="drawer-display-name" text="User">
+                                    <font>
+                                        <Font name="System Bold" size="17.0" />
+                                    </font>
+                                </Label>
+                                <Label fx:id="drawerUsername" styleClass="drawer-username" text="@user">
+                                    <font>
+                                        <Font size="14.0" />
+                                    </font>
+                                </Label>
+                                <HBox spacing="16.0" style="-fx-padding: 8 0 0 0;">
+                                    <children>
+                                        <HBox spacing="4.0">
+                                            <children>
+                                                <Label fx:id="drawerFollowingCount" styleClass="drawer-stat-count" text="0" />
+                                                <Label styleClass="drawer-stat-label" text="Following" />
+                                            </children>
+                                        </HBox>
+                                        <HBox spacing="4.0">
+                                            <children>
+                                                <Label fx:id="drawerFollowersCount" styleClass="drawer-stat-count" text="0" />
+                                                <Label styleClass="drawer-stat-label" text="Followers" />
+                                            </children>
+                                        </HBox>
+                                    </children>
+                                </HBox>
+                            </children>
+                        </VBox>
+
+                        <Region style="-fx-pref-height: 1; -fx-background-color: #333333;" />
+
+                        <VBox spacing="4.0" style="-fx-padding: 8 0 0 0;" VBox.vgrow="ALWAYS">
+                            <children>
+                                <Button alignment="BASELINE_LEFT" maxWidth="Infinity" minHeight="48.0" onAction="#handleGoToProfile" styleClass="drawer-menu-item" text="Profile" />
+                                <Button alignment="BASELINE_LEFT" maxWidth="Infinity" minHeight="48.0" onAction="#handleGoToBookmarks" styleClass="drawer-menu-item" text="Bookmarks" />
+                                <Region VBox.vgrow="ALWAYS" />
+                                <Button alignment="BASELINE_LEFT" maxWidth="Infinity" minHeight="48.0" onAction="#handleLogout" styleClass="drawer-menu-item, drawer-logout" text="Log out" />
+                            </children>
+                        </VBox>
+                    </children>
+                </VBox>
+
+                <Region fx:id="drawerDimmer" onMouseClicked="#handleCloseDrawer" styleClass="drawer-dimmer" HBox.hgrow="ALWAYS" />
+            </children>
+        </HBox>
+
+    </children>
+</StackPane>

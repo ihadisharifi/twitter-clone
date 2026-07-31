@@ -1,0 +1,27 @@
+package shared.protocol;
+
+public enum RequestType {
+    REGISTER,
+    LOGIN,
+    LOGOUT,
+    GET_PROFILE,
+    UPDATE_PROFILE,
+    CREATE_TWEET,
+    DELETE_TWEET,
+    GET_TWEET,
+    GET_USER_TWEETS,
+    FOLLOW,
+    UNFOLLOW,
+    GET_FOLLOWERS,
+    GET_FOLLOWING,
+    LIKE_TWEET,
+    UNLIKE_TWEET,
+    BOOKMARK_TWEET,
+    UNBOOKMARK_TWEET,
+    GET_BOOKMARKS,
+    GET_FEED,
+    SEARCH_USERS,
+    SEARCH_TWEETS,
+    SEARCH_HASHTAG,
+    PING,
+}

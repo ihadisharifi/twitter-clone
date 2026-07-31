@@ -1,0 +1,195 @@
+/* Root styling for the entire X Theme application */
+.root, .app-root {
+    -fx-background-color: #000000;
+}
+
+/* Custom styling for TextFields matching X's borders */
+.text-field, .password-field {
+    -fx-background-color: #000000;
+    -fx-text-fill: #ffffff;
+    -fx-prompt-text-fill: #71767b;
+    -fx-border-color: #333333;
+    -fx-border-radius: 4px;
+    -fx-background-radius: 4px;
+    -fx-highlight-fill: #1d9bf0;
+}
+
+/* Focused input state with active blue border */
+.text-field:focused, .password-field:focused {
+    -fx-border-color: #1d9bf0;
+}
+
+/* Rounded login button */
+.button {
+    -fx-background-color: #ffffff;
+    -fx-text-fill: #000000;
+    -fx-background-radius: 20px;
+    -fx-font-weight: bold;
+    -fx-cursor: hand;
+}
+
+/* Hover effect for the main button */
+.button:hover {
+    -fx-background-color: #e6e6e6;
+}
+
+/* Custom borderless styling for X tweet compose box */
+.text-area {
+    -fx-background-color: #000000;
+    -fx-text-fill: #ffffff;
+}
+.text-area .content {
+    -fx-background-color: #000000;
+}
+
+/* ===== Mobile chrome: top bar ===== */
+.top-bar {
+    -fx-background-color: #000000;
+    -fx-border-color: #333333;
+    -fx-border-width: 0 0 1 0;
+    -fx-min-height: 54px;
+    -fx-pref-height: 54px;
+    -fx-max-height: 54px;
+}
+
+.x-logo {
+    -fx-text-fill: #ffffff;
+}
+
+.avatar-button {
+    -fx-background-color: transparent;
+    -fx-background-radius: 50%;
+    -fx-padding: 2 2 2 2;
+    -fx-cursor: hand;
+    -fx-content-display: graphic-only;
+}
+
+.avatar-button:hover {
+    -fx-background-color: rgba(255, 255, 255, 0.08);
+}
+
+/* ===== Mobile chrome: bottom navigation ===== */
+.bottom-bar {
+    -fx-background-color: #000000;
+    -fx-border-color: #333333;
+    -fx-border-width: 1 0 0 0;
+    -fx-min-height: 56px;
+    -fx-pref-height: 56px;
+    -fx-max-height: 56px;
+}
+
+.bottom-nav-item {
+    -fx-background-color: transparent;
+    -fx-text-fill: #71767b;
+    -fx-background-radius: 0;
+    -fx-font-size: 20px;
+    -fx-cursor: hand;
+    -fx-font-weight: normal;
+}
+
+.bottom-nav-item:hover {
+    -fx-background-color: rgba(255, 255, 255, 0.06);
+    -fx-text-fill: #e7e9ea;
+}
+
+.bottom-nav-active {
+    -fx-text-fill: #ffffff;
+    -fx-font-weight: bold;
+}
+
+/* Back button floating over the profile banner (X-style) */
+.banner-back-button {
+    -fx-background-color: rgba(0, 0, 0, 0.55);
+    -fx-text-fill: #ffffff;
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-background-radius: 50%;
+    -fx-min-width: 34px;
+    -fx-min-height: 34px;
+    -fx-pref-width: 34px;
+    -fx-pref-height: 34px;
+    -fx-max-width: 34px;
+    -fx-max-height: 34px;
+    -fx-padding: 0;
+    -fx-cursor: hand;
+}
+
+.banner-back-button:hover {
+    -fx-background-color: rgba(0, 0, 0, 0.75);
+    -fx-text-fill: #ffffff;
+}
+
+.profile-banner {
+    -fx-background-color: #333333;
+    -fx-min-height: 120px;
+    -fx-pref-height: 120px;
+    -fx-max-height: 120px;
+}
+
+/* ===== Side drawer (opened from top avatar) ===== */
+.drawer-overlay {
+    -fx-background-color: transparent;
+}
+
+.drawer-panel {
+    -fx-background-color: #000000;
+    -fx-border-color: #333333;
+    -fx-border-width: 0 1 0 0;
+    -fx-min-width: 280px;
+    -fx-pref-width: 300px;
+    -fx-max-width: 320px;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.55), 18, 0.2, 4, 0);
+}
+
+.drawer-dimmer {
+    -fx-background-color: rgba(91, 112, 131, 0.40);
+    -fx-cursor: hand;
+}
+
+.drawer-header {
+    -fx-background-color: #000000;
+}
+
+.drawer-display-name {
+    -fx-text-fill: #e7e9ea;
+}
+
+.drawer-username {
+    -fx-text-fill: #71767b;
+}
+
+.drawer-stat-count {
+    -fx-text-fill: #e7e9ea;
+    -fx-font-weight: bold;
+    -fx-font-size: 14px;
+}
+
+.drawer-stat-label {
+    -fx-text-fill: #71767b;
+    -fx-font-size: 14px;
+}
+
+.drawer-menu-item {
+    -fx-background-color: transparent;
+    -fx-text-fill: #e7e9ea;
+    -fx-font-size: 18px;
+    -fx-font-weight: bold;
+    -fx-background-radius: 0;
+    -fx-padding: 0 16 0 16;
+    -fx-alignment: CENTER_LEFT;
+    -fx-cursor: hand;
+}
+
+.drawer-menu-item:hover {
+    -fx-background-color: rgba(255, 255, 255, 0.08);
+    -fx-text-fill: #e7e9ea;
+}
+
+.drawer-logout {
+    -fx-text-fill: #f4212e;
+}
+
+.drawer-logout:hover {
+    -fx-text-fill: #f4212e;
+    -fx-background-color: rgba(244, 33, 46, 0.10);
+}
