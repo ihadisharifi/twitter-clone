@@ -6,22 +6,29 @@ import client.SideDrawerHelper;
 import client.UserSession;
 import client.network.ServerConnection;
 import com.google.gson.Gson;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
+import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import shared.models.User;
+import shared.models.Tweet;
 import shared.protocol.Request;
 import shared.protocol.RequestType;
 import shared.protocol.Response;
 import shared.protocol.StatusCode;
 
 import java.util.UUID;
+import java.util.ArrayList;
+import java.util.List;
 
 public class BookmarksController {
 
@@ -39,29 +46,85 @@ public class BookmarksController {
     @FXML
     public void initialize() {
         SideDrawerHelper.populateUserHeader(drawerDisplayName, drawerUsername);
-        renderUnsupportedState();
+        loadBookmarks();
         loadDrawerProfile();
     }
 
-    private void renderUnsupportedState() {
+    private void loadBookmarks() {
+        Task<List<Tweet>> task = new Task<>() {
+            @Override protected List<Tweet> call() throws Exception {
+                Response response = send(RequestType.GET_BOOKMARKS, new JsonObject());
+                List<Tweet> tweets = new ArrayList<>();
+                if (response.getPayload() != null && response.getPayload().isJsonArray()) {
+                    for (JsonElement element : response.getPayload().getAsJsonArray())
+                        tweets.add(gson.fromJson(element, Tweet.class));
+                }
+                return tweets;
+            }
+        };
+        task.setOnSucceeded(event -> renderBookmarks(task.getValue()));
+        start(task, "load-bookmarks");
+    }
+
+    private void renderBookmarks(List<Tweet> tweets) {
         bookmarksContainer.getChildren().clear();
-        VBox box = new VBox(8);
-        box.setStyle("-fx-padding: 80 40; -fx-alignment: center;");
+        if (tweets.isEmpty()) {
+            Label empty = new Label("Save posts to find them here.");
+            empty.setTextFill(Color.web("#71767b"));
+            empty.setStyle("-fx-padding: 60 30; -fx-font-size: 16px;");
+            bookmarksContainer.getChildren().add(empty);
+            return;
+        }
+        for (Tweet tweet : tweets) {
+            VBox card = new VBox(7);
+            card.setStyle("-fx-padding: 14 16; -fx-border-color: #333333; -fx-border-width: 0 0 1 0;");
+            HBox header = new HBox(8);
+            Label author = new Label(authorName(tweet));
+            author.setTextFill(Color.WHITE);
+            author.setFont(Font.font("System", FontWeight.BOLD, 14));
+            Region spacer = new Region();
+            HBox.setHgrow(spacer, Priority.ALWAYS);
+            Button remove = new Button("Remove");
+            remove.setOnAction(event -> removeBookmark(tweet, remove));
+            header.getChildren().addAll(author, spacer, remove);
+            Label content = new Label(tweet.getContent() == null ? "" : tweet.getContent());
+            content.setTextFill(Color.web("#e7e9ea"));
+            content.setWrapText(true);
+            card.getChildren().addAll(header, content);
+            bookmarksContainer.getChildren().add(card);
+        }
+    }
 
-        Label title = new Label("Bookmarks aren't available yet");
-        title.setTextFill(Color.WHITE);
-        title.setFont(Font.font("System", FontWeight.BOLD, 22));
+    private String authorName(Tweet tweet) {
+        User current = UserSession.getInstance().getCurrentUser();
+        return current != null && current.getId() == tweet.getAuthorId()
+                ? current.getDisplayName() : "User #" + tweet.getAuthorId();
+    }
 
-        Label detail = new Label(
-                "The server database does not currently provide bookmark storage. "
-                        + "No fake or device-only bookmarks are being shown."
-        );
-        detail.setTextFill(Color.web("#71767b"));
-        detail.setFont(Font.font("System", 14));
-        detail.setWrapText(true);
-        detail.setMaxWidth(420);
-        box.getChildren().addAll(title, detail);
-        bookmarksContainer.getChildren().add(box);
+    private void removeBookmark(Tweet tweet, Button button) {
+        button.setDisable(true);
+        Task<Void> task = new Task<>() {
+            @Override protected Void call() throws Exception {
+                JsonObject body = new JsonObject();
+                body.addProperty("tweetId", tweet.getId());
+                send(RequestType.UNBOOKMARK_TWEET, body);
+                return null;
+            }
+        };
+        task.setOnSucceeded(event -> loadBookmarks());
+        task.setOnFailed(event -> button.setDisable(false));
+        start(task, "remove-bookmark");
+    }
+
+    private Response send(RequestType type, JsonObject body) throws Exception {
+        String token = UserSession.getInstance().getToken();
+        if (token == null || token.isBlank()) throw new IllegalStateException("Your session has expired.");
+        body.addProperty("token", token);
+        if (!connection.isConnected()) connection.connect();
+        Response response = connection.sendMessage(new Request(UUID.randomUUID().toString(), type, body));
+        if (response == null || response.getStatus() != StatusCode.OK)
+            throw new IllegalStateException(response == null ? "Request failed." : response.getMessage());
+        return response;
     }
 
     private void loadDrawerProfile() {

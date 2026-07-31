@@ -468,12 +468,27 @@ public class FeedController {
             UiIconHelper.apply(likeButton, UiIconHelper.Icon.HEART, "#f91880");
         }
         likeButton.setOnAction(event -> toggleLike(tweet, likeButton));
-        actions.getChildren().addAll(replyButton, retweetButton, likeButton);
+        Button bookmarkButton = actionButton("");
+        UiIconHelper.apply(bookmarkButton, UiIconHelper.Icon.BOOKMARK, "#71767b");
+        bookmarkButton.setOnAction(event -> bookmarkTweet(tweet, bookmarkButton));
+        actions.getChildren().addAll(replyButton, retweetButton, likeButton, bookmarkButton);
         content.getChildren().addAll(actions, replySection);
 
         row.getChildren().addAll(avatar, content);
         card.getChildren().add(row);
         return card;
+    }
+
+    private void bookmarkTweet(Tweet tweet, Button button) {
+        button.setDisable(true);
+        Task<Void> task = requestTask(RequestType.BOOKMARK_TWEET,
+                body -> body.addProperty("tweetId", tweet.getId()));
+        task.setOnSucceeded(event -> {
+            button.setDisable(false);
+            UiIconHelper.apply(button, UiIconHelper.Icon.BOOKMARK, "#1d9bf0");
+        });
+        task.setOnFailed(event -> button.setDisable(false));
+        startTask(task, "bookmark-tweet");
     }
 
     private Node createReplyNode(Tweet reply, Map<Integer, User> usersById) {
