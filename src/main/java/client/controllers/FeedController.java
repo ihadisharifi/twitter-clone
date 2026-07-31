@@ -4,6 +4,7 @@ import client.LogoutHelper;
 import client.NavigationManager;
 import client.SideDrawerHelper;
 import client.TweetMediaHelper;
+import client.TweetCharacterLimit;
 import client.TweetTimeFormatter;
 import client.UserSession;
 import client.UserAvatarHelper;
@@ -540,6 +541,9 @@ public class FeedController {
         Button post = new Button("Reply");
         post.setStyle("-fx-background-color: #1d9bf0; -fx-text-fill: white; "
                 + "-fx-background-radius: 18; -fx-font-weight: bold; -fx-cursor: hand;");
+        Label characterCount = new Label();
+        characterCount.setTextFill(Color.web("#71767b"));
+        TweetCharacterLimit.enforce(input, characterCount);
 
         attach.setOnAction(event -> {
             FileChooser chooser = new FileChooser();
@@ -592,7 +596,7 @@ public class FeedController {
 
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
-        controls.getChildren().addAll(attach, remove, spacer, post);
+        controls.getChildren().addAll(attach, remove, spacer, characterCount, post);
         composer.getChildren().addAll(input, mediaPreview, controls);
         return composer;
     }

@@ -82,6 +82,8 @@
                     <children>
                         <Button onAction="#handleAttachMedia" style="-fx-background-color: transparent; -fx-text-fill: #1d9bf0; -fx-font-size: 13px; -fx-padding: 4 8; -fx-cursor: hand;" text="Media" />
                         <Button fx:id="emojiButton" onAction="#handleEmojiClick" style="-fx-background-color: transparent; -fx-text-fill: #1d9bf0; -fx-font-size: 13px; -fx-padding: 4 8; -fx-cursor: hand;" text="Emoji" />
+                        <Region HBox.hgrow="ALWAYS" />
+                        <Label fx:id="characterCountLabel" style="-fx-text-fill: #71767b; -fx-font-size: 13px;" text="0 / 280" />
                     </children>
                 </HBox>
             </children>

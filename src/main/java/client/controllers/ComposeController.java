@@ -3,6 +3,7 @@ package client.controllers;
 import client.EmojiPickerHelper;
 import client.NavigationManager;
 import client.TweetMediaHelper;
+import client.TweetCharacterLimit;
 import client.UserSession;
 import client.network.ServerConnection;
 import com.google.gson.Gson;
@@ -30,6 +31,8 @@ import java.util.UUID;
 
 public class ComposeController {
 
+    private static final int MAX_TWEET_CHARACTERS = TweetCharacterLimit.MAX_CHARACTERS;
+
     @FXML private TextArea tweetTextArea;
     @FXML private Button cancelButton;
     @FXML private Button postButton;
@@ -37,6 +40,7 @@ public class ComposeController {
     @FXML private Button emojiButton;
     @FXML private StackPane mediaPreviewContainer;
     @FXML private VBox mediaPreviewBox;
+    @FXML private Label characterCountLabel;
 
     private String selectedMediaPath;
 
@@ -45,6 +49,19 @@ public class ComposeController {
 
     @FXML
     public void initialize() {
+        tweetTextArea.textProperty().addListener((observable, oldText, newText) -> {
+            String value = newText == null ? "" : newText;
+            int characterCount = value.codePointCount(0, value.length());
+            if (characterCount > MAX_TWEET_CHARACTERS) {
+                int endIndex = value.offsetByCodePoints(0, MAX_TWEET_CHARACTERS);
+                tweetTextArea.setText(value.substring(0, endIndex));
+                tweetTextArea.positionCaret(endIndex);
+                return;
+            }
+            updateComposerState();
+        });
+        updateComposerState();
+
         Platform.runLater(() -> {
             if (tweetTextArea != null) {
                 tweetTextArea.requestFocus();
@@ -81,6 +98,7 @@ public class ComposeController {
                     mediaPreviewBox.getChildren().setAll(previewNode);
                     mediaPreviewContainer.setVisible(true);
                     mediaPreviewContainer.setManaged(true);
+                    updateComposerState();
                 } else {
                     handleRemoveMedia();
                 }
@@ -100,6 +118,19 @@ public class ComposeController {
             mediaPreviewContainer.setVisible(false);
             mediaPreviewContainer.setManaged(false);
         }
+        updateComposerState();
+    }
+
+    private void updateComposerState() {
+        if (tweetTextArea == null || postButton == null) {
+            return;
+        }
+        String text = tweetTextArea.getText() == null ? "" : tweetTextArea.getText();
+        int characterCount = text.codePointCount(0, text.length());
+        if (characterCountLabel != null) {
+            characterCountLabel.setText(characterCount + " / " + MAX_TWEET_CHARACTERS);
+        }
+        postButton.setDisable(text.trim().isEmpty() && selectedMediaPath == null);
     }
 
     @FXML
@@ -110,6 +141,10 @@ public class ComposeController {
 
         String content = tweetTextArea.getText() == null ? "" : tweetTextArea.getText().trim();
         if (content.isEmpty() && selectedMediaPath == null) {
+            return;
+        }
+        if (content.codePointCount(0, content.length()) > MAX_TWEET_CHARACTERS) {
+            showError("Tweets cannot exceed " + MAX_TWEET_CHARACTERS + " characters.");
             return;
         }
 
